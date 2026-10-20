@@ -1,0 +1,1288 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>המעבר ל-Gemini</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Cousine:wght@400;700&family=David+Libre:wght@400;700&family=Karantina:wght@400;700&family=Rubik:wght@400;500;700&display=swap">
+<style>
+/* Layout: a fixed 1920×1080 film stage scaled to fit the screen. Five challenges from daily work (options of the live
+   vote, in the same words), each told in four beats (title card, how we work today, with Gemini, side-by-side summary)
+   with a narration band. Then what else changed, and the next step: an AI agent on the Windows desktop. It ends on the vote's
+   own waiting page, with the same QR. */
+:root{
+  color-scheme:dark;
+  --page:#05070d;
+  /* then: paper */
+  --paper:#e6e2d7; --paper-2:#d2ccbc; --sheet:#f3f0e8; --ink:#2b3140; --ink-soft:#62666f; --stamp:#b3302a; --scan:rgba(43,49,64,.045);
+  /* then: old desktop */
+  --win:#c0c0c0; --win-hi:#ffffff; --win-lo:#7b7b7b; --win-ink:#111111; --win-field:#ffffff; --win-grid:#d9d9d9;
+  --win-title:#0a246a; --win-title-2:#a6caf0; --att:#fff6c9; --folder:#f3cf5b; --folder-dk:#d6a92a; --note:#fff27a;
+  --xl-yellow:#ffff66; --xl-pink:#ffb8c9; --xl-green:#b9f0a8; --err:#c4161c;
+  /* now: night workspace */
+  --night:#0c1121; --panel:#141b31; --panel-2:#1b2441; --line:#2b3659; --text:#eef1fa; --muted:#a3adca;
+  --doc:#f7f8fb; --doc-ink:#1c2232; --doc-muted:#5d6579; --doc-line:#e2e6ef;
+  --bar-bg:rgba(12,17,33,.86); --cap-bg:rgba(12,17,33,.93); --hl:rgba(255,193,69,.6);
+  /* collaborator cursor colors: the accent system */
+  --c-blue:#5b8cff; --c-coral:#ff6b6b; --c-amber:#ffc145; --c-green:#33d29b; --c-violet:#a98bff;
+  --glow-a:rgba(91,140,255,.17); --glow-b:rgba(255,107,107,.09); --shadow:rgba(43,49,64,.28); --shadow-night:rgba(0,0,0,.45);
+  /* the QR card */
+  --qr-bg:#ffffff;
+  /* the next step: a Windows desktop */
+  --wp-0:#071030; --wp-1:#0e2c72; --bl-a:#5aa8ff; --bl-b:#8a5cff; --dk-shade:rgba(4,7,20,.78); --dk-tile:rgba(255,255,255,.12);
+  --tb-bg:rgba(14,18,36,.9); --sel:rgba(255,255,255,.14); --sel-line:rgba(255,255,255,.32); --start:#3a9bff;
+  /* type */
+  --f-display:"Karantina","Rubik","Arial Narrow",sans-serif;
+  --f-ui:"Rubik","Segoe UI",Arial,sans-serif;
+  --f-memo:"David Libre","David","Times New Roman",serif;
+  --f-mono:"Cousine","Courier New",monospace;
+  --f-hand:"Amatic SC","Segoe Print","Comic Sans MS",cursive;
+  --f-old:Tahoma,Arial,sans-serif;
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .17 0 0 0 0 .19 0 0 0 0 .25 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--page);color:var(--text);font-family:var(--f-ui);overflow:hidden;padding-inline:16px;padding-block:16px}
+button,input{font:inherit}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+.sg-a{stop-color:var(--c-blue)} .sg-b{stop-color:var(--c-violet)} .sg-c{stop-color:var(--c-coral)}
+
+#frame{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--page)}
+#frame:fullscreen{width:100vw;height:100vh}
+#frame.idle{cursor:none}
+#viewer{position:relative;flex:none;overflow:hidden;border-radius:8px;box-shadow:0 30px 90px var(--shadow-night);background:var(--night)}
+#frame:fullscreen #viewer{border-radius:0;box-shadow:none}
+#viewer{cursor:pointer}
+#stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;direction:rtl;background:var(--night);color:var(--text);font-family:var(--f-ui)}
+#stage p,#stage h1,#stage h2,#stage ul,#stage ol{margin:0}
+#stage ul,#stage ol{padding:0;list-style:none}
+
+/* scenes + entrance motion (keyframe animations only, so pausing freezes everything) */
+.scene{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility 0s linear .45s}
+.scene.active{opacity:1;visibility:visible;transition:opacity .45s ease}
+.scene.wipe.active{transition:none;animation:wipe .9s cubic-bezier(.75,0,.2,1) both}
+.fill{position:absolute;inset:0}
+.pop,.rise,.fade,.slam,.drop{opacity:0}
+.pop.in{animation:pop .55s cubic-bezier(.2,.9,.3,1.25) var(--d,0s) both}
+.rise.in{animation:rise .7s cubic-bezier(.2,.8,.2,1) var(--d,0s) both}
+.fade.in{animation:fade .6s ease var(--d,0s) both}
+.slam.in{animation:slam .45s cubic-bezier(.3,1.5,.5,1) both}
+.drop.in{animation:drop 1.5s cubic-bezier(.25,.8,.3,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.86) rotate(var(--r,0deg))}to{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+@keyframes rise{from{opacity:0;transform:translateY(46px) rotate(var(--r,0deg))}to{opacity:1;transform:translateY(0) rotate(var(--r,0deg))}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes slam{0%{opacity:0;transform:scale(2.6) rotate(var(--r,-8deg))}55%{opacity:1}100%{opacity:1;transform:scale(1) rotate(var(--r,-8deg))}}
+@keyframes drop{from{opacity:1;transform:translateY(-102%)}to{opacity:1;transform:translateY(0)}}
+@keyframes wipe{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+#stage.paused *,#stage.paused *::before,#stage.paused *::after{animation-play-state:paused!important}
+.can-glow{transition:box-shadow .6s ease}
+
+/* worlds */
+.paper{background-color:var(--paper);background-image:var(--noise),repeating-linear-gradient(0deg,var(--scan) 0 1px,transparent 1px 5px),radial-gradient(130% 95% at 50% 35%,var(--paper) 45%,var(--paper-2) 100%);color:var(--ink)}
+.night{background-color:var(--night);background-image:radial-gradient(1000px 720px at 88% 6%,var(--glow-a),transparent 62%),radial-gradient(900px 700px at 6% 98%,var(--glow-b),transparent 62%);color:var(--text)}
+.c-blue{--cc:var(--c-blue)} .c-coral{--cc:var(--c-coral)} .c-amber{--cc:var(--c-amber)} .c-green{--cc:var(--c-green)} .c-violet{--cc:var(--c-violet)}
+
+/* story frame: a full-sentence headline on top (the narrator's first line), a caption band below (the second line) */
+.st-head{position:absolute;top:42px;right:96px;left:96px;display:flex;align-items:flex-start;gap:34px}
+.st-head .chip-then,.st-head .chip-now{flex:none}
+.st-text{display:flex;flex-direction:column;gap:8px;min-width:0;padding-top:2px}
+.st-eye{font-size:30px;font-weight:500;color:var(--muted)}
+.paper .st-eye{font-family:var(--f-memo);font-weight:700;color:var(--ink-soft)}
+.st-line{font-size:56px;font-weight:700;line-height:1.18;text-wrap:balance}
+.paper .st-line{color:var(--ink)}
+.chip-then{--r:-3deg;display:inline-block;transform:rotate(var(--r));font-family:var(--f-memo);font-weight:700;font-size:46px;line-height:1.1;color:var(--stamp);border:6px double var(--stamp);padding:2px 26px 8px;white-space:nowrap}
+.chip-then.on-night{background:var(--paper)}
+.chip-now{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:80px;line-height:1;color:var(--night);background:var(--c-amber);padding:10px 30px 2px;border-radius:14px;white-space:nowrap}
+.capband{position:absolute;right:96px;left:96px;bottom:40px;min-height:128px;display:grid;align-items:center;padding:22px 46px;background:var(--cap-bg);border-radius:24px;color:var(--text);box-shadow:0 18px 50px var(--shadow-night)}
+.cap{font-size:48px;font-weight:500;line-height:1.3;text-wrap:balance}
+.stamp{position:absolute;font-family:var(--f-memo);font-weight:700;color:var(--stamp);border:7px solid var(--stamp);border-radius:10px;padding:4px 30px 12px;mix-blend-mode:multiply;white-space:nowrap}
+
+/* cold open: new-mail popups pile up over an old desktop */
+.pile{position:absolute;top:0;right:0;left:0;bottom:84px}
+.nw{width:560px}
+.nw .win-bar{font-size:22px;padding:4px 8px 4px 6px}
+.nw .win-btns i{width:28px;height:26px;font-size:16px}
+.nw-body{display:flex;align-items:center;gap:18px;margin:8px;padding:12px 16px;background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo)}
+.nw-body svg{flex:none;width:46px;height:46px;color:var(--win-title)}
+.nw-body div{min-width:0}
+.nw-body b{display:block;font-size:22px;color:var(--ink-soft)}
+.nw-body span{display:block;font-size:28px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.taskbar{position:absolute;right:0;left:0;bottom:0;height:84px;display:flex;align-items:center;justify-content:space-between;padding:0 20px 0 80px;background:var(--win);border-top:3px solid var(--win-hi);font-family:var(--f-old);color:var(--win-ink)}
+.tb-start{display:flex;align-items:center;gap:12px;padding:6px 20px;font-size:28px;font-weight:700;border:3px solid;border-color:var(--win-hi) var(--win-lo) var(--win-lo) var(--win-hi)}
+.tb-start svg{width:36px;height:36px}
+.tb-count{display:flex;align-items:center;gap:14px;padding:2px 20px;font-size:26px;border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo)}
+.tb-count .n{font-size:46px;color:var(--err);font-variant-numeric:tabular-nums}
+
+/* title */
+.t-wrap{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:56px;padding:0 110px;text-align:center}
+.big-title{display:grid;justify-items:center;gap:26px;font-family:var(--f-display);font-weight:700;line-height:1}
+.t-a{font-size:120px;color:var(--muted)}
+.t-b{font-size:150px}
+.t-b em{font-style:normal;color:var(--c-amber)}
+.t-b svg{width:62px;height:62px;margin-inline-start:4px;vertical-align:top}
+
+/* daily work has many challenges; the video shows five of them */
+.mn-cloud{position:absolute;inset:0;opacity:.75;transition:opacity .8s ease}
+.mn-cloud.dim{opacity:0}
+.mn-cloud span{position:absolute;font-size:40px;font-weight:500;line-height:1.2;color:var(--muted);white-space:nowrap;border:2px solid var(--line);border-radius:999px;padding:6px 26px 8px}
+.mn-head{position:absolute;top:100px;right:110px;left:110px;text-align:center;font-family:var(--f-display);font-weight:700;font-size:112px;line-height:1.02;text-wrap:balance}
+.mn-sub{position:absolute;top:290px;right:110px;left:110px;text-align:center;font-size:50px;line-height:1.3;color:var(--muted);text-wrap:balance}
+.mn-list{position:absolute;top:420px;right:370px;left:370px;display:flex;flex-direction:column;gap:16px}
+.mn-list li{display:flex;align-items:center;gap:30px;height:92px;padding:0 40px;background:var(--panel);border:1px solid var(--line);border-radius:22px;font-size:46px;font-weight:700;white-space:nowrap;box-shadow:0 18px 50px var(--shadow-night)}
+.mn-list b{flex:none;width:64px;text-align:center;font-family:var(--f-display);font-size:84px;line-height:1;color:var(--c-amber)}
+
+/* story title cards */
+.in-wrap{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:30px;text-align:center;padding:0 120px}
+.in-eyebrow{font-size:42px;color:var(--muted)}
+.in-title{font-family:var(--f-display);font-weight:700;font-size:180px;line-height:1;text-wrap:balance}
+.in-sub{font-size:54px;color:var(--muted);text-wrap:balance}
+.in-ex{font-weight:700;color:var(--c-amber)}
+.in-flow{display:flex;align-items:center;gap:34px;margin-top:26px}
+.in-flow svg,.sum-arrow svg{width:72px;height:72px;color:var(--muted)}
+
+/* side-by-side summary */
+.sum-half{position:absolute;top:0;bottom:0;width:50%;display:grid;align-content:center;justify-items:center;gap:46px;padding:0 110px;text-align:center}
+.sum-then{right:0}
+.sum-now{left:0}
+.sum-text{font-family:var(--f-display);font-weight:700;font-size:140px;line-height:1.02;text-wrap:balance}
+.sum-text em{font-style:normal;color:var(--c-amber)}
+.sum-arrow{position:absolute;top:50%;left:50%;width:150px;height:150px;margin:-75px 0 0 -75px;display:grid;place-items:center;border-radius:50%;background:var(--c-amber);box-shadow:0 20px 50px var(--shadow-night)}
+.sum-arrow svg{width:84px;height:84px;color:var(--night)}
+
+/* old desktop */
+.win{position:absolute;display:flex;flex-direction:column;background:var(--win);border:3px solid;border-color:var(--win-hi) var(--win-lo) var(--win-lo) var(--win-hi);box-shadow:12px 14px 0 var(--shadow);font-family:var(--f-old);color:var(--win-ink)}
+.win-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(270deg,var(--win-title),var(--win-title-2));color:var(--win-hi);font-weight:700;font-size:28px;padding:6px 12px 6px 8px}
+.win-btns{display:flex;gap:6px}
+.win-btns i{width:34px;height:30px;display:grid;place-items:center;background:var(--win);border:2px solid;border-color:var(--win-hi) var(--win-lo) var(--win-lo) var(--win-hi);font-style:normal;font-weight:700;font-size:20px;line-height:1;color:var(--win-ink)}
+.field{margin:10px;background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo);overflow:hidden}
+
+/* challenge 1, then: the email chain */
+.w-mail{top:240px;right:150px;width:1620px}
+.mail-cols,.mail{display:grid;grid-template-columns:230px minmax(0,1fr) 620px;gap:22px;align-items:center;padding:14px 22px}
+.mail-cols{background:var(--win);font-size:24px;border-bottom:2px solid var(--win-lo)}
+.mail{font-size:30px;font-weight:700;border-bottom:1px solid var(--win-grid)}
+.mail .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att{display:inline-flex;align-items:center;gap:8px;max-width:100%;justify-self:start;font-weight:400;font-size:26px;background:var(--att);border:1px solid var(--win-lo);padding:3px 12px}
+.att span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att svg{width:24px;height:24px;flex:none}
+.st-q{left:150px;top:716px;font-size:84px;--r:-8deg}
+
+/* challenge 2, then: the inbox */
+.w-inbox{top:236px;right:150px;width:1180px;height:630px}
+.unread{display:flex;align-items:baseline;gap:20px;padding:12px 22px 4px;font-size:34px;font-weight:700}
+.unread .n{font-size:96px;line-height:1;color:var(--err);font-variant-numeric:tabular-nums}
+.inbox-view{flex:1;position:relative}
+.inbox-scroll.in{animation:scrollUp 8s linear infinite}
+@keyframes scrollUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.irow{display:grid;grid-template-columns:minmax(0,1fr) 170px 100px;gap:16px;padding:15px 22px;border-bottom:1px solid var(--win-grid);font-size:29px}
+.irow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reading{position:absolute;top:380px;left:70px;width:460px;font-family:var(--f-mono);font-size:40px;line-height:1.35;color:var(--ink)}
+.reading b{display:block;font-size:88px;color:var(--stamp)}
+
+/* challenge 3, then: the shared drive */
+.w-exp{top:236px;right:150px;width:1620px;height:630px}
+.exp-top{display:flex;gap:16px;align-items:center;padding:10px 10px 0}
+.addr,.sbox{display:flex;align-items:center;gap:12px;background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo);padding:8px 14px;font-size:28px;white-space:nowrap}
+.addr{flex:1;min-width:0;overflow:hidden}
+.seg{display:inline-flex;gap:12px}
+.seg+.seg::before{content:"›";color:var(--win-lo)}
+.sbox{width:420px}
+.sbox .tx::after,.gs .tx::after{content:"";display:inline-block;width:3px;height:1em;margin-inline-start:4px;vertical-align:-.15em;background:currentColor;animation:blink 1s steps(1) infinite}
+.hourglass{width:30px;height:30px;flex:none;opacity:0}
+.hourglass.in{opacity:1;animation:spin 1s linear infinite}
+.exp-body{flex:1;position:relative;margin:10px;background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo);display:grid;grid-template-columns:repeat(4,1fr);align-content:start;gap:44px 20px;padding:44px 30px}
+.fold{display:flex;flex-direction:column;align-items:center;gap:14px;font-size:28px;text-align:center}
+.fold i{position:relative;width:140px;height:100px;background:var(--folder);border-radius:4px 4px 8px 8px;box-shadow:inset 0 -7px 0 var(--folder-dk)}
+.fold i::before{content:"";position:absolute;top:-15px;right:0;width:60px;height:19px;background:var(--folder);border-radius:6px 6px 0 0}
+.nf{position:absolute;left:34px;bottom:30px;font-size:36px;font-weight:700;color:var(--err)}
+
+/* challenge 4, then: the spreadsheet */
+.w-xls{top:236px;right:150px;width:1620px;height:630px}
+.fxbar{display:flex;align-items:center;gap:16px;margin:10px 10px 0;background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo);padding:8px 14px;font-size:28px;min-height:58px}
+.fxbar i{font-family:var(--f-memo);font-weight:700;color:var(--win-lo)}
+.fxbar .f{font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate}
+.xgrid{flex:1;margin:10px;display:grid;grid-template-columns:70px repeat(5,minmax(0,1fr));grid-auto-rows:1fr;background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo);font-size:29px}
+.xgrid>div{display:flex;align-items:center;padding:4px 14px;border-left:1px solid var(--win-grid);border-bottom:1px solid var(--win-grid);white-space:nowrap;overflow:hidden}
+.xgrid .h{justify-content:center;background:var(--win);font-size:22px}
+.xgrid .merge{grid-column:span 5;background:var(--xl-yellow);font-weight:700;font-size:32px}
+.xgrid .b{font-weight:700}
+.xgrid .pk{background:var(--xl-pink)}
+.xgrid .gr{background:var(--xl-green)}
+.xgrid .e{color:var(--err);font-weight:700}
+.xgrid .e.in{animation:flash .5s steps(2) 4}
+@keyframes flash{50%{background:var(--err);color:var(--win-field)}}
+.sticky{position:absolute;top:640px;left:110px;width:470px;padding:26px 34px;background:var(--note);color:var(--ink);font-family:var(--f-hand);font-weight:700;font-size:66px;line-height:1.05;box-shadow:8px 12px 0 var(--shadow);--r:-6deg}
+
+/* challenge 5, then: minutes typed during the meeting */
+.w-word{top:236px;right:150px;width:1150px;height:620px}
+.tools{display:flex;align-items:center;gap:10px;padding:10px 10px 0}
+.tools i{width:42px;height:40px;display:grid;place-items:center;background:var(--win);border:2px solid;border-color:var(--win-hi) var(--win-lo) var(--win-lo) var(--win-hi);font-family:var(--f-memo);font-style:normal;font-weight:700;font-size:26px}
+.tools span{background:var(--win-field);border:2px solid;border-color:var(--win-lo) var(--win-hi) var(--win-hi) var(--win-lo);padding:3px 14px;font-size:22px;direction:ltr}
+.page{flex:1;display:flex;flex-direction:column;gap:20px;padding:36px 50px;font-family:var(--f-memo);font-size:40px;line-height:1.3}
+.page p{min-height:1.3em}
+.page .pl-h{font-weight:700;text-decoration:underline}
+.st-late{top:300px;left:130px;width:470px}
+
+/* challenge 1, now: shared doc */
+.doc{position:absolute;top:234px;right:120px;width:1300px;height:650px;background:var(--doc);color:var(--doc-ink);border-radius:14px;box-shadow:0 34px 80px var(--shadow-night)}
+.doc-top{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 44px;border-bottom:1px solid var(--doc-line)}
+.doc-name{display:flex;align-items:center;gap:16px;font-size:36px;font-weight:700}
+.doc-name i{display:block;width:32px;height:42px;border-radius:4px;background:var(--c-blue)}
+.doc-people{display:flex;align-items:center;gap:20px}
+.live{font-size:27px;color:var(--doc-muted)}
+.avs{display:flex;padding:4px 4px 4px 4px;padding-inline-start:16px;border-radius:999px}
+.avs.glow{box-shadow:0 0 0 6px var(--hl)}
+.av{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;border:3px solid var(--doc);margin-inline-start:-12px;background:var(--cc);color:var(--night);font-size:26px;font-weight:700}
+.doc-body{padding:16px 80px;font-size:30px;line-height:1.8}
+.doc-body p{min-height:1.8em}
+.doc-body .sub{font-weight:700;text-decoration:underline}
+.cur{position:relative;display:inline-block;width:0;height:1.2em;vertical-align:-.25em}
+.cur::before{content:"";position:absolute;top:0;bottom:0;right:-2px;width:4px;border-radius:2px;background:var(--cc);animation:blink 1.05s steps(1) infinite}
+.flag{position:absolute;bottom:calc(100% + 2px);right:-2px;background:var(--cc);color:var(--night);font-family:var(--f-ui);font-style:normal;font-size:20px;font-weight:700;line-height:1;padding:5px 10px;border-radius:8px 8px 0 8px;white-space:nowrap}
+.gem{position:absolute;top:234px;left:70px;width:400px;background:var(--panel-2);border:2px solid var(--c-blue);border-radius:18px;padding:22px 26px;box-shadow:0 20px 50px var(--shadow-night)}
+.gem header{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:26px;font-weight:700;color:var(--muted)}
+.gem header svg{width:34px;height:34px}
+.gem-ask{min-height:4.2em;font-size:30px;line-height:1.4}
+.gem-chip{display:inline-flex;align-items:center;gap:8px;font-size:24px;font-weight:700;color:var(--night);background:var(--c-amber);border-radius:999px;padding:4px 16px 6px}
+.gem-chip svg{width:26px;height:26px}
+.cmt{position:absolute;top:500px;left:70px;width:400px;background:var(--panel-2);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:0 20px 50px var(--shadow-night);font-size:30px;line-height:1.4}
+.cmt header{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:26px;font-weight:700;color:var(--muted)}
+.cmt .dot{width:36px;height:36px;border-radius:50%;background:var(--cc)}
+.cmt .ok{color:var(--c-green)}
+
+/* now: app with the Gemini side panel */
+.app{position:absolute;top:236px;right:110px;left:110px;height:640px;display:grid;grid-template-columns:minmax(0,1fr) 800px;background:var(--panel);border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:0 34px 80px var(--shadow-night)}
+.app-main{display:flex;flex-direction:column;gap:10px;padding:30px 36px;min-width:0}
+.app-title{display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:36px;font-weight:700;padding-bottom:8px}
+.badge{font-size:26px;font-weight:700;background:var(--c-coral);color:var(--night);border-radius:999px;padding:6px 18px}
+.nrow{display:grid;grid-template-columns:minmax(0,1fr) 110px 86px;gap:16px;padding:15px 6px;border-bottom:1px solid var(--line);font-size:28px;color:var(--muted)}
+.nrow b{font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gp{display:flex;flex-direction:column;gap:18px;padding:24px 32px;background:var(--panel-2);border-inline-start:1px solid var(--line);min-width:0}
+.gp.glow{box-shadow:inset 0 0 0 5px var(--hl)}
+.gp-head{display:flex;align-items:center;gap:14px;font-size:32px;font-weight:700}
+.gp-head svg{width:42px;height:42px}
+.ask{align-self:flex-end;max-width:94%;min-height:2.2em;background:var(--c-blue);color:var(--night);font-size:29px;font-weight:500;line-height:1.4;padding:16px 26px;border-radius:24px 24px 24px 6px}
+.ans{display:flex;flex-direction:column;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px 26px;font-size:28px;line-height:1.4}
+.ans ul{display:flex;flex-direction:column;gap:10px}
+.ans-h{display:flex;align-items:center;gap:12px;font-size:26px;color:var(--muted)}
+.ans-h svg{width:32px;height:32px}
+.ans li{display:flex;gap:14px;align-items:flex-start}
+.ans li::before{content:"";flex:none;width:13px;height:13px;margin-top:.55em;border-radius:50%;background:var(--cc)}
+.gp-input{margin-top:auto;display:flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:12px 26px;font-size:26px;color:var(--muted)}
+
+/* challenge 3, now: Drive search */
+.gs{position:absolute;top:266px;right:190px;left:190px;height:124px;display:flex;align-items:center;gap:26px;padding:0 46px;background:var(--panel-2);border:2px solid var(--line);border-radius:66px;font-size:42px;box-shadow:0 24px 60px var(--shadow-night)}
+.gs.glow{box-shadow:0 0 0 6px var(--hl),0 24px 60px var(--shadow-night)}
+.gs svg{width:56px;height:56px;flex:none}
+.gs .tx{white-space:nowrap;overflow:hidden}
+.res{position:absolute;top:426px;right:190px;left:190px;display:flex;flex-direction:column;gap:28px;padding:36px 44px;background:var(--panel);border:1px solid var(--line);border-radius:28px;box-shadow:0 24px 60px var(--shadow-night)}
+.file{display:flex;align-items:center;gap:26px}
+.ficon{flex:none;width:66px;height:84px;border-radius:6px;background-color:var(--c-blue);background-image:repeating-linear-gradient(180deg,transparent 0 22px,var(--doc) 22px 26px);background-size:36px 64px;background-position:center 14px;background-repeat:no-repeat}
+.fname{font-size:40px;font-weight:700}
+.fmeta{margin-top:6px;font-size:27px;color:var(--muted)}
+.ai-sum{display:flex;gap:18px;align-items:flex-start;padding:24px 28px;background:var(--panel-2);border-radius:18px;font-size:34px;line-height:1.48}
+.ai-sum svg{flex:none;width:42px;height:42px;margin-top:4px}
+.found{align-self:flex-start;font-size:27px;font-weight:700;color:var(--night);background:var(--c-green);border-radius:999px;padding:8px 20px}
+
+/* challenge 4, now: Sheets */
+.sheet-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:34px;align-items:start;padding-top:10px}
+.tbl{border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:30px}
+.tr{display:grid;grid-template-columns:1.3fr 1fr 1fr;border-bottom:1px solid var(--line)}
+.tr:last-child{border-bottom:0}
+.tr>span{padding:16px 18px}
+.tr.hd{background:var(--panel-2);color:var(--muted);font-size:25px;font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+.chart{display:flex;flex-direction:column;gap:24px}
+.chart-t{font-size:28px;font-weight:700;color:var(--muted)}
+.bar{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;gap:14px;font-size:28px}
+.track{display:flex;align-items:center;gap:12px}
+.track i{display:block;height:54px;width:calc(var(--v) / 128 * 78%);border-radius:8px;background:var(--c-blue);transform:scaleX(0);transform-origin:right center}
+.track i.in{animation:grow .9s cubic-bezier(.2,.8,.2,1) var(--d,0s) both}
+.track b{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* challenge 5, now: rough notes in Docs, a protocol from Gemini */
+.notes{display:flex;flex-direction:column;gap:22px;padding-top:12px;font-size:32px;line-height:1.35}
+.notes li::before{content:"–";margin-inline-end:14px;color:var(--muted)}
+
+/* what else changed */
+.rc-head{position:absolute;top:96px;right:160px;font-family:var(--f-display);font-weight:700;font-size:160px;line-height:1}
+.rc-grid{position:absolute;top:400px;right:260px;left:260px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px}
+.rc{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:48px 46px;background:var(--panel);border:1px solid var(--line);border-radius:28px}
+.rc svg{width:130px;height:130px;margin-bottom:10px;color:var(--cc)}
+.rc-t{font-size:66px;font-weight:700;line-height:1.1}
+.rc-s{font-size:42px;color:var(--muted)}
+
+/* the next step: a Windows desktop; the sources are desktop icons, the agent is a window opened from the taskbar */
+.dk-wp{position:absolute;inset:0;background:radial-gradient(55% 65% at 20% 66%,rgba(64,140,255,.45),transparent 62%),radial-gradient(70% 60% at 88% 8%,rgba(40,90,200,.25),transparent 60%),linear-gradient(160deg,var(--wp-1),var(--wp-0) 62%)}
+.dk-wp svg{position:absolute;left:-60px;top:250px;width:880px;height:880px;opacity:.8;filter:blur(1.5px)}
+.bl-a{stop-color:var(--bl-a)} .bl-b{stop-color:var(--bl-b)}
+.dk-wp::after{content:"";position:absolute;top:0;right:0;left:0;height:250px;background:linear-gradient(var(--dk-shade),transparent)}
+.dk-icons{position:absolute;top:196px;right:34px;width:184px;display:flex;flex-direction:column;gap:16px}
+.dk-ic{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px 12px;border:1px solid transparent;border-radius:8px;font-size:21px;font-weight:500;line-height:1.2;white-space:nowrap;text-align:center;color:var(--text);text-shadow:0 1px 3px var(--shadow-night);transition:background-color .3s ease,border-color .3s ease,box-shadow .4s ease}
+.dk-ic i{display:grid;place-items:center;width:70px;height:70px;border-radius:16px;background:var(--dk-tile)}
+.dk-ic svg{width:48px;height:48px;color:var(--cc)}
+.dk-ic.in{background:var(--sel);border-color:var(--sel-line)}
+.dk-ic.glow{border-color:var(--cc);box-shadow:0 0 34px -4px var(--cc)}
+.dk-ic::after{content:"";position:absolute;top:45px;right:100%;width:126px;margin-top:-2px;border-top:4px dashed var(--sel-line);transform:scaleX(0);transform-origin:right center}
+.dk-ic.in::after{animation:grow .6s ease .2s both}
+.dk-ic.glow::after{border-top-color:var(--cc)}
+.dk-bar{position:absolute;right:0;left:0;bottom:0;height:76px;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--tb-bg);border-top:1px solid var(--sel-line)}
+.dk-bar .b{position:relative;width:54px;height:54px;display:grid;place-items:center;border-radius:8px;transition:background-color .3s ease}
+.dk-bar .b svg{width:32px;height:32px;color:var(--text)}
+.dk-start{display:grid;grid-template-columns:repeat(2,14px);gap:3px}
+.dk-start i{width:14px;height:14px;border-radius:2px;background:var(--start)}
+.dk-search{display:flex;align-items:center;gap:10px;width:250px;height:44px;padding:0 18px;border-radius:22px;background:var(--sel);font-size:20px;color:var(--muted)}
+.dk-search svg{width:22px;height:22px}
+.tb-ag.in{background:var(--sel)}
+.tb-ag::after{content:"";position:absolute;bottom:3px;left:50%;width:18px;height:4px;margin-left:-9px;border-radius:2px;background:var(--c-amber);transform:scaleX(0)}
+.tb-ag.in::after{transform:scaleX(1)}
+.dk-clock{position:absolute;left:28px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;font-size:19px;line-height:1.35;color:var(--text)}
+#sc-next .capband{bottom:100px}
+.ag{position:absolute;top:200px;right:344px;width:1000px;height:630px;display:flex;flex-direction:column;background:var(--panel-2);border:1px solid var(--sel-line);border-radius:14px;overflow:hidden;box-shadow:0 40px 90px var(--shadow-night);transform-origin:50% 100%}
+.ag-bar{flex:none;display:flex;align-items:center;gap:14px;height:58px;padding:0 22px;background:var(--panel);font-size:26px;font-weight:700}
+.ag-bar svg{width:32px;height:32px}
+.ag-on{margin-inline-start:auto;font-size:21px;font-weight:500;color:var(--c-green)}
+.ag-ctl{display:flex;gap:28px;margin-inline-start:34px;font-style:normal;font-size:22px;font-weight:400;color:var(--muted)}
+.ag-ctl i{font-style:normal}
+.ag-chat{flex:1;min-height:0;display:flex;flex-direction:column;gap:16px;padding:22px 30px 0}
+.ag .ask{min-height:0;font-size:29px}
+.ag .ans{font-size:29px}
+.ag-think{display:flex;align-items:center;gap:10px;font-size:24px;color:var(--muted)}
+.ag-think i{width:11px;height:11px;border-radius:50%;background:var(--muted);animation:blink 1s steps(1) infinite}
+.ag-think i:nth-child(2){animation-delay:.33s}
+.ag-think i:nth-child(3){animation-delay:.66s;margin-inline-end:6px}
+.ag.done .ag-think{display:none}
+.ag-in{flex:none;display:flex;align-items:center;gap:14px;height:66px;margin:16px 30px 22px;padding:0 24px 0 9px;border:2px solid var(--line);border-radius:33px;font-size:28px}
+.ag-in .ph{flex:1;color:var(--muted)}
+.ag-in .tx{flex:1;white-space:nowrap;overflow:hidden;display:none}
+.ag.typing .ag-in .ph{display:none}
+.ag.typing .ag-in .tx{display:block}
+.ag.typing .ag-in .tx::after{content:"";display:inline-block;width:3px;height:1em;margin-inline-start:4px;vertical-align:-.15em;background:currentColor;animation:blink 1s steps(1) infinite}
+.ag.sent .ag-in .ph{display:block}
+.ag.sent .ag-in .tx{display:none}
+.ag-send{flex:none;width:48px;height:48px;display:grid;place-items:center;border-radius:50%;background:var(--line);color:var(--text);transition:background-color .3s ease}
+.ag-send svg{width:26px;height:26px}
+.ag.typing .ag-send{background:var(--c-blue);color:var(--night)}
+.ag.sent .ag-send{background:var(--line);color:var(--text)}
+.src{flex:none;align-self:center;margin-inline-start:auto;font-style:normal;font-size:22px;font-weight:700;color:var(--night);background:var(--cc);border-radius:999px;padding:4px 16px 6px}
+
+/* mindset */
+.ai-l1{position:absolute;top:240px;right:130px;left:130px;font-family:var(--f-display);font-weight:700;font-size:150px;line-height:1.05;text-wrap:balance}
+.strike{position:relative;transition:color .5s ease}
+.strike.in{color:var(--muted)}
+.strike::after{content:"";position:absolute;right:-10px;left:-10px;top:50%;height:16px;border-radius:8px;background:var(--c-coral);transform:scaleX(0);transform-origin:right center}
+.strike.in::after{animation:grow .6s cubic-bezier(.6,0,.2,1) both}
+.ai-l2{position:absolute;top:640px;right:130px;font-family:var(--f-display);font-weight:700;font-size:230px;line-height:1}
+.ai-l2 em{font-style:normal;color:var(--c-amber)}
+
+/* finale */
+.fin-head{position:absolute;top:96px;right:0;left:0;text-align:center;font-family:var(--f-display);font-weight:700;font-size:150px;line-height:1}
+.fin-page{position:absolute;top:300px;left:460px;width:1000px;height:430px;padding:70px 90px;background:var(--doc);color:var(--doc-ink);border-radius:14px;box-shadow:0 40px 90px var(--shadow-night)}
+.fin-type{font-family:var(--f-display);font-weight:700;font-size:240px;line-height:1.05}
+.fin-type .cur{height:.9em;vertical-align:-.05em}
+.fin-type .cur::before{width:10px;right:-6px;border-radius:5px}
+.fin-type .flag{font-size:34px;padding:10px 16px;border-radius:10px 10px 0 10px}
+.fin-sub{position:absolute;top:790px;right:0;left:0;text-align:center;font-size:76px;font-weight:700}
+.fin-card{position:absolute;inset:0;z-index:5;display:grid;place-content:center;justify-items:center;gap:30px;padding:0 120px;text-align:center;background:var(--night)}
+.fin-card svg{width:120px;height:120px}
+.fin-event{max-width:1700px;font-family:var(--f-display);font-weight:700;font-size:180px;line-height:1.02;text-wrap:balance}
+.fin-welcome{font-size:70px;font-weight:500;color:var(--c-amber)}
+
+/* closing page: the live vote's waiting screen, with the same QR */
+.jn-head{position:absolute;top:70px;right:110px;display:flex;align-items:center;gap:30px}
+.jn-logo{width:110px;height:110px}
+.jn-ev{font-size:32px;color:var(--muted)}
+.jn-h{font-family:var(--f-display);font-weight:700;font-size:110px;line-height:1}
+.jn-main{position:absolute;top:330px;right:110px;width:980px;display:flex;flex-direction:column;gap:40px}
+.jn-big{font-family:var(--f-display);font-weight:700;font-size:190px;line-height:1}
+.jn-lead{font-size:44px;line-height:1.35;color:var(--muted);text-wrap:balance}
+.jn-card{position:absolute;top:210px;left:110px;width:620px;display:grid;justify-items:center;gap:16px;padding:36px 36px 30px;background:var(--qr-bg);border-radius:30px;color:var(--night);box-shadow:0 30px 80px var(--shadow-night)}
+#jn-qr img,#jn-qr canvas{display:block;width:480px!important;height:480px!important}
+.jn-card b{font-size:46px}
+.jn-alt{display:grid;justify-items:center;gap:6px;width:100%;padding-top:16px;border-top:2px solid var(--doc-line);text-align:center}
+#jn-alt-lab{font-size:28px;color:var(--doc-muted)}
+#jn-url{font-size:19px;color:var(--doc-muted);word-break:break-all}
+.jn-card.short #jn-url{font-size:42px;font-weight:700;color:var(--night);word-break:normal}
+
+/* welcome page: on screen until someone presses play */
+#splash{position:absolute;inset:0;z-index:20;display:grid;align-content:center;justify-items:center;gap:26px;padding:0 160px;text-align:center;cursor:pointer}
+.sp-spark{width:110px;height:110px}
+.sp-logo:not([hidden]) + .sp-spark{display:none}
+.sp-ministry{font-size:54px;font-weight:700;line-height:1.2}
+.sp-ministry:empty{display:none}
+.sp-hello{font-size:64px;font-weight:500;color:var(--c-amber)}
+.sp-event{max-width:1500px;font-family:var(--f-display);font-weight:700;font-size:140px;line-height:1.02;text-wrap:balance}
+.sp-play{margin-top:22px;width:170px;height:170px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--c-amber);color:var(--night);cursor:pointer;box-shadow:0 24px 70px var(--shadow-night);transition:transform .2s ease}
+.sp-play:hover{transform:scale(1.06)}
+.sp-play:focus-visible{outline:6px solid var(--c-blue);outline-offset:8px}
+.sp-play svg{width:86px;height:86px;fill:currentColor;transform:translateX(6px)}
+.sp-hint{font-size:32px;color:var(--muted)}
+
+/* controls */
+#bar{position:absolute;left:50%;bottom:22px;z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);padding:8px 14px;background:var(--bar-bg);border:1px solid var(--line);border-radius:999px;direction:rtl;transition:opacity .35s ease}
+#frame.idle #bar,#frame.nobar #bar{opacity:0;pointer-events:none}
+#frame.pre #bar{display:none}
+#bar button{flex:none;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--text);cursor:pointer}
+#bar button:hover{background:var(--panel-2)}
+#bar button:focus-visible,#prog:focus-visible{outline:3px solid var(--c-blue);outline-offset:2px}
+#bar svg{width:24px;height:24px;fill:currentColor}
+#prog{position:relative;flex:0 1 420px;min-width:60px;height:8px;border-radius:4px;background:var(--line);overflow:hidden;cursor:pointer}
+#fill{position:absolute;top:0;right:0;bottom:0;width:0;background:var(--c-amber)}
+#clock{flex:none;min-width:88px;text-align:center;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;direction:ltr}
+
+/* brand slots: empty in the shared page, filled in the local build */
+.brand-logo{display:block;object-fit:contain}
+.sp-logo{width:170px;height:170px}
+.t-logo{width:150px;height:150px}
+.fin-logo{width:150px;height:150px}
+.credit{position:absolute;right:0;left:0;bottom:40px;text-align:center;font-size:24px;color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){
+  .inbox-scroll.in{animation-duration:.01s!important;animation-iteration-count:1!important}
+}
+</style>
+<style id="brand-theme">
+:root{
+  --night:#121a36; --panel:#1a2349; --panel-2:#212c58; --line:#344178;
+  --c-amber:#f0903c; --c-coral:#e44854; --c-blue:#30a8c0; --c-green:#6c9c48; --c-violet:#4860a8;
+  --glow-a:rgba(72,96,168,.32); --glow-b:rgba(228,72,84,.12); --hl:rgba(240,144,60,.6);
+}
+</style>
+
+<svg class="defs" aria-hidden="true">
+  <defs>
+    <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="sg-a"/><stop offset=".55" class="sg-b"/><stop offset="1" class="sg-c"/></linearGradient>
+    <symbol id="spark" viewBox="0 0 100 100"><path d="M50 0C53 30 70 47 100 50C70 53 53 70 50 100C47 70 30 53 0 50C30 47 47 30 50 0Z" fill="url(#sg)"/></symbol>
+    <symbol id="clip" viewBox="0 0 24 24"><path d="M16.5 6.5v10a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="38 20"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></g></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></g></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .4-7.98A6 6 0 0 0 6.3 9.6 4.5 4.5 0 0 0 7 18.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V18a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18V9a1.5 1.5 0 0 0-1.5-1.5H12L10 5H4.5A1.5 1.5 0 0 0 3 6.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9s1.2-6.4 3.8-9z"/></g></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></g></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v12c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8V6"/><path d="M4.5 12c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8"/></g></symbol>
+  </defs>
+</svg>
+
+<div id="frame" class="pre">
+  <div id="viewer">
+    <div id="stage" lang="he" dir="rtl">
+
+      <!-- 0 · cold open: the email avalanche -->
+      <section class="scene paper" id="sc-cold" data-dur="8000">
+        <div class="pile">
+          <div class="win nw pop pa" style="top:70px;right:150px;--r:-2deg;--d:0s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>רונית</b><span>RE: RE: FW: טיוטה</span></div></div></div>
+          <div class="win nw pop pa" style="top:150px;right:820px;--r:1.5deg;--d:0.9s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>כולם</b><span>השב לכולם: מי לקח את המטען?</span></div></div></div>
+          <div class="win nw pop pa" style="top:120px;right:1280px;--r:-1deg;--d:1.7s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>האגף</b><span>טיוטה_סופית_סופית_3.docx</span></div></div></div>
+          <div class="win nw pop pb" style="top:300px;right:330px;--r:2deg;--d:0s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>רכש</b><span>דחוף!!!</span></div></div></div>
+          <div class="win nw pop pb" style="top:270px;right:960px;--r:-2.5deg;--d:0.45s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>מטה</b><span>תזכורת: דוח רבעוני</span></div></div></div>
+          <div class="win nw pop pb" style="top:430px;right:90px;--r:1deg;--d:0.85s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>הלשכה</b><span>FW: FW: FW: עדכון נוהל</span></div></div></div>
+          <div class="win nw pop pb" style="top:390px;right:1310px;--r:2deg;--d:1.2s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>אבי</b><span>שכחתי לצרף את הקובץ</span></div></div></div>
+          <div class="win nw pop pb" style="top:530px;right:600px;--r:-1.5deg;--d:1.5s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>אבי</b><span>שוב, הפעם עם הקובץ</span></div></div></div>
+          <div class="win nw pop pb" style="top:560px;right:1120px;--r:1deg;--d:1.75s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>מיכל</b><span>מי שלח את הגרסה הנכונה?</span></div></div></div>
+          <div class="win nw pop pb" style="top:650px;right:210px;--r:-2deg;--d:1.97s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>יוסי</b><span>השב לכולם: תורידו אותי מהרשימה</span></div></div></div>
+          <div class="win nw pop pb" style="top:700px;right:840px;--r:2.5deg;--d:2.17s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>דנה</b><span>RE: RE: RE: RE: אישור</span></div></div></div>
+          <div class="win nw pop pb" style="top:760px;right:1330px;--r:-1deg;--d:2.35s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>מזכירות</b><span>הזמנה: ישיבת צוות</span></div></div></div>
+          <div class="win nw pop pb" style="top:200px;right:480px;--r:3deg;--d:2.5s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>דני</b><span>קובץ גדול מדי, שולח בחלקים (1/3)</span></div></div></div>
+          <div class="win nw pop pb" style="top:470px;right:760px;--r:-3deg;--d:2.63s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>דני</b><span>קובץ גדול מדי, שולח בחלקים (2/3)</span></div></div></div>
+          <div class="win nw pop pb" style="top:610px;right:430px;--r:1.5deg;--d:2.75s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>כולם</b><span>השב לכולם: +1</span></div></div></div>
+          <div class="win nw pop pb" style="top:340px;right:640px;--r:-2deg;--d:2.86s"><div class="win-bar"><span>הודעה חדשה</span><span class="win-btns"><i>×</i></span></div><div class="nw-body"><svg><use href="#i-mail"/></svg><div><b>מטה</b><span>תזכורת אחרונה!!!</span></div></div></div>
+        </div>
+        <div class="taskbar"><span class="tb-start"><svg><use href="#i-mail"/></svg>דואר נכנס</span><span class="tb-count">הודעות שלא נקראו: <b class="n" data-to="1248">0</b></span></div>
+      </section>
+
+      <!-- 1 · title: the narrator's sentence is the title, shown as he says it -->
+      <section class="scene night" id="sc-title" data-dur="6500">
+        <div class="t-wrap">
+          <img src="brand/culture_sport_logo.png" class="brand-logo t-logo" alt="לוגו משרד התרבות והספורט">
+          <h1 class="big-title"><span class="t-a rise">זה המסע שלנו:</span><span class="t-b rise">המעבר ל-<em>Gemini</em><svg><use href="#spark"/></svg> בעידן ה-AI</span></h1>
+        </div>
+      </section>
+
+      <!-- 2 · daily work has many challenges; the video shows five of them, the options of the live vote -->
+      <section class="scene night" id="sc-many" data-dur="10000">
+        <div class="mn-cloud" aria-hidden="true">
+          <span class="pop" style="top:280px;right:130px;--r:-2deg;--d:0.20s">מילוי טפסים</span>
+          <span class="pop" style="top:280px;right:560px;--r:1.5deg;--d:0.70s">הכנת מצגות</span>
+          <span class="pop" style="top:280px;right:960px;--r:-1deg;--d:1.10s">אישורים וחתימות</span>
+          <span class="pop" style="top:280px;right:1450px;--r:2deg;--d:0.00s">תרגום מסמכים</span>
+          <span class="pop" style="top:420px;right:300px;--r:1deg;--d:1.40s">מעקב אחרי משימות</span>
+          <span class="pop" style="top:420px;right:820px;--r:-2deg;--d:0.50s">עדכון נהלים</span>
+          <span class="pop" style="top:420px;right:1240px;--r:1.5deg;--d:1.00s">סקרים ושאלונים</span>
+          <span class="pop" style="top:560px;right:90px;--r:2deg;--d:0.30s">ניהול גרסאות</span>
+          <span class="pop" style="top:560px;right:520px;--r:-1.5deg;--d:1.60s">הזמנות רכש</span>
+          <span class="pop" style="top:560px;right:930px;--r:1deg;--d:0.60s">תזכורות</span>
+          <span class="pop" style="top:560px;right:1300px;--r:-2deg;--d:1.20s">דיווחים שבועיים</span>
+          <span class="pop" style="top:700px;right:200px;--r:-1deg;--d:0.10s">הדרכת עובדים חדשים</span>
+          <span class="pop" style="top:700px;right:770px;--r:2deg;--d:1.70s">תיאום בין צוותים</span>
+          <span class="pop" style="top:700px;right:1330px;--r:-1.5deg;--d:0.80s">טבלאות ונתונים</span>
+          <span class="pop" style="top:840px;right:120px;--r:1.5deg;--d:1.30s">סיכומים</span>
+          <span class="pop" style="top:840px;right:480px;--r:-2deg;--d:0.40s">חיפוש אנשי קשר</span>
+          <span class="pop" style="top:840px;right:980px;--r:1deg;--d:1.50s">ארגון אירועים</span>
+          <span class="pop" style="top:840px;right:1420px;--r:-1deg;--d:0.90s">תיוק מסמכים</span>
+        </div>
+        <h2 class="mn-head rise">בעבודה היומיומית שלנו יש הרבה אתגרים.</h2>
+        <p class="mn-sub rise">הנה כמה דוגמאות, ואיך Gemini ו-Google Workspace עוזרים בהן.</p>
+        <ol class="mn-list">
+          <li class="rise" style="--d:0s"><b>1</b>ניסוח מכתבים ותשובות לפניות</li>
+          <li class="rise" style="--d:.15s"><b>2</b>מיילים שלא נגמרים</li>
+          <li class="rise" style="--d:.3s"><b>3</b>חיפוש מסמכים וקבצים</li>
+          <li class="rise" style="--d:.45s"><b>4</b>דוחות ואקסלים</li>
+          <li class="rise" style="--d:.6s"><b>5</b>סיכומי ישיבות ופרוטוקולים</li>
+        </ol>
+      </section>
+
+      <!-- 3–6 · challenge 1: letters and replies (Docs + Gemini). Each challenge title is the matching option in the live vote -->
+      <section class="scene night" id="st1-intro" data-kind="intro" data-dur="4000">
+        <div class="in-wrap">
+          <p class="in-eyebrow rise">אתגר 1 מתוך 5</p>
+          <h2 class="in-title rise">ניסוח מכתבים ותשובות לפניות</h2>
+          <p class="in-sub rise"><b class="in-ex">דוגמה מחיי היום-יום:</b> תשובה לפנייה, שצריכה ארבעה אישורים</p>
+          <div class="in-flow fade"><span class="chip-then on-night">איך עובדים היום</span><svg><use href="#arrow"/></svg><span class="chip-now">עם Gemini</span></div>
+        </div>
+      </section>
+      <section class="scene paper" id="st1-then" data-dur="11000">
+        <header class="st-head"><span class="chip-then">איך עובדים היום</span><div class="st-text"><p class="st-eye">אתגר 1 · ניסוח מכתבים ותשובות לפניות</p><h2 class="st-line">כל גורם מקבל את המכתב במייל, ומתקן אותו בעותק משלו.</h2></div></header>
+        <div class="win w-mail pop">
+          <div class="win-bar"><span>דואר נכנס</span><span class="win-btns"><i>_</i><i>□</i><i>×</i></span></div>
+          <div class="field">
+            <div class="mail-cols"><span>מאת</span><span>נושא</span><span>קובץ מצורף</span></div>
+            <div class="mail rise ml1"><span>האגף</span><span class="s">תשובה לפנייה – טיוטה</span><span class="att"><svg><use href="#clip"/></svg><span>תשובה_לפנייה.docx</span></span></div>
+            <div class="mail rise ml2"><span>לשכה משפטית</span><span class="s">השב: תשובה לפנייה – טיוטה</span><span class="att"><svg><use href="#clip"/></svg><span>תשובה_לפנייה_תיקונים.docx</span></span></div>
+            <div class="mail rise ml3"><span>הנהלה</span><span class="s">השב: השב: תשובה לפנייה</span><span class="att"><svg><use href="#clip"/></svg><span>תשובה_לפנייה_סופי.docx</span></span></div>
+            <div class="mail rise ml4"><span>דוברות</span><span class="s">העבר: השב: השב: תשובה לפנייה</span><span class="att"><svg><use href="#clip"/></svg><span>תשובה_לפנייה_סופי_סופי.docx</span></span></div>
+            <div class="mail rise ml5"><span>לשכה משפטית</span><span class="s">השב לכולם: העבר: השב: השב: תשובה לפנייה</span><span class="att"><svg><use href="#clip"/></svg><span>תשובה_לפנייה_סופי_3_אחרי_הערות.docx</span></span></div>
+          </div>
+        </div>
+        <div class="stamp slam st-q">איזו גרסה סופית?!</div>
+        <div class="capband rise"><p class="cap">אחרי ארבעה ימים יש 9 גרסאות, ואף אחד לא יודע איזו מהן הסופית.</p></div>
+      </section>
+      <section class="scene night wipe" id="st1-now" data-dur="12000">
+        <header class="st-head"><span class="chip-now">עם Gemini</span><div class="st-text"><p class="st-eye">אתגר 1 · ב-Google Docs</p><h2 class="st-line">Gemini מנסח טיוטה לתשובה, תוך שניות.</h2></div></header>
+        <aside class="gem pop"><header><svg><use href="#spark"/></svg>Gemini · עזרה בכתיבה</header><p class="gem-ask"><span class="tx" data-text="לנסח תשובה לפנייה: הבקשה אושרה, בכפוף לנהלים"></span></p></aside>
+        <div class="doc rise">
+          <div class="doc-top">
+            <div class="doc-name"><i></i>תשובה לפנייה<span class="gem-chip pop"><svg><use href="#spark"/></svg>טיוטה של Gemini</span></div>
+            <div class="doc-people fade"><span class="live">4 עורכים עכשיו</span><span class="avs can-glow"><b class="av c-blue">א</b><b class="av c-amber">ה</b><b class="av c-coral">ל</b><b class="av c-green">ד</b></span></div>
+          </div>
+          <div class="doc-body">
+            <p>לכבוד</p>
+            <p>מר ישראל ישראלי</p>
+            <p>שלום רב,</p>
+            <p class="sub">הנדון: תשובה לפנייתך</p>
+            <p><span class="tx d1" data-text="פנייתך התקבלה ונבדקה בעיון."></span></p>
+            <p><span class="tx d2" data-text="הוחלט להיענות לבקשתך."></span></p>
+            <p><span class="tx d3" data-text="זאת, בכפוף לנהלים."></span></p>
+            <p><span class="tx d4" data-text="נשמח לעמוד לרשותך בכל שאלה."></span></p>
+            <p>בברכה,</p>
+          </div>
+        </div>
+        <aside class="cmt pop c-coral"><header><i class="dot"></i>לשכה משפטית</header><p>עברנו על הנוסח. <b class="ok">מאושר ✓</b></p></aside>
+        <div class="capband rise"><p class="cap">וכל הגורמים עובדים על אותו מסמך, בלי לשלוח קבצים במייל.</p></div>
+      </section>
+      <section class="scene" id="st1-sum" data-kind="sum" data-dur="5000">
+        <div class="sum-half sum-then paper"><span class="chip-then rise">איך עובדים היום</span><p class="sum-text rise">9 גרסאות במייל</p></div>
+        <div class="sum-half sum-now night"><span class="chip-now rise">עם Gemini</span><p class="sum-text rise">טיוטה אחת, <em>וכולם עליה</em></p></div>
+        <div class="sum-arrow pop"><svg><use href="#arrow"/></svg></div>
+      </section>
+
+      <!-- 7–10 · challenge 2: endless email (Gmail + Gemini) -->
+      <section class="scene night" id="st2-intro" data-kind="intro" data-dur="4000">
+        <div class="in-wrap">
+          <p class="in-eyebrow rise">אתגר 2 מתוך 5</p>
+          <h2 class="in-title rise">מיילים שלא נגמרים</h2>
+          <p class="in-sub rise"><b class="in-ex">דוגמה מחיי היום-יום:</b> חוזרים מחופשה, ומחכות 312 הודעות</p>
+          <div class="in-flow fade"><span class="chip-then on-night">איך עובדים היום</span><svg><use href="#arrow"/></svg><span class="chip-now">עם Gemini</span></div>
+        </div>
+      </section>
+      <section class="scene paper" id="st2-then" data-dur="11000">
+        <header class="st-head"><span class="chip-then">איך עובדים היום</span><div class="st-text"><p class="st-eye">אתגר 2 · מיילים שלא נגמרים</p><h2 class="st-line">חוזרים מחופשה, וקוראים מאות מיילים, אחד אחד.</h2></div></header>
+        <div class="win w-inbox pop">
+          <div class="win-bar"><span>דואר נכנס</span><span class="win-btns"><i>_</i><i>□</i><i>×</i></span></div>
+          <div class="unread">דואר שלא נקרא: <span class="n" data-to="312">0</span></div>
+          <div class="field inbox-view">
+            <div class="inbox-scroll">
+              <div class="irow"><b>תזכורת: דוח רבעוני</b><span>מטה</span><span>08:01</span></div>
+              <div class="irow"><b>השב: ישיבת צוות – שינוי מועד</b><span>הלשכה</span><span>08:14</span></div>
+              <div class="irow"><b>דחוף!!!</b><span>רכש</span><span>08:20</span></div>
+              <div class="irow"><b>לאישורך: בקשת חופשה</b><span>משאבי אנוש</span><span>08:33</span></div>
+              <div class="irow"><b>השב לכולם: מי לקח את המטען מחדר 204?</b><span>כולם</span><span>08:41</span></div>
+              <div class="irow"><b>לאישורך: הזמנת ציוד</b><span>רכש</span><span>09:02</span></div>
+              <div class="irow"><b>הזמנה: ישיבת צוות שבועית</b><span>מזכירות</span><span>09:15</span></div>
+              <div class="irow"><b>מצגת להנהלה – גרסה 4</b><span>הלשכה</span><span>09:27</span></div>
+              <div class="irow"><b>הודעה: הפסקת חשמל ביום ג'</b><span>אחזקה</span><span>09:40</span></div>
+              <div class="irow"><b>תזכורת אחרונה: דוח רבעוני!!!</b><span>מטה</span><span>10:05</span></div>
+              <div class="irow"><b>תזכורת: דוח רבעוני</b><span>מטה</span><span>08:01</span></div>
+              <div class="irow"><b>השב: ישיבת צוות – שינוי מועד</b><span>הלשכה</span><span>08:14</span></div>
+              <div class="irow"><b>דחוף!!!</b><span>רכש</span><span>08:20</span></div>
+              <div class="irow"><b>לאישורך: בקשת חופשה</b><span>משאבי אנוש</span><span>08:33</span></div>
+              <div class="irow"><b>השב לכולם: מי לקח את המטען מחדר 204?</b><span>כולם</span><span>08:41</span></div>
+              <div class="irow"><b>לאישורך: הזמנת ציוד</b><span>רכש</span><span>09:02</span></div>
+              <div class="irow"><b>הזמנה: ישיבת צוות שבועית</b><span>מזכירות</span><span>09:15</span></div>
+              <div class="irow"><b>מצגת להנהלה – גרסה 4</b><span>הלשכה</span><span>09:27</span></div>
+              <div class="irow"><b>הודעה: הפסקת חשמל ביום ג'</b><span>אחזקה</span><span>09:40</span></div>
+              <div class="irow"><b>תזכורת אחרונה: דוח רבעוני!!!</b><span>מטה</span><span>10:05</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="reading rise">זמן קריאה משוער:<b>3 שעות</b></p>
+        <div class="capband rise"><p class="cap">זה לוקח בוקר שלם, רק כדי להבין מה פספסנו.</p></div>
+      </section>
+      <section class="scene night wipe" id="st2-now" data-dur="12000">
+        <header class="st-head"><span class="chip-now">עם Gemini</span><div class="st-text"><p class="st-eye">אתגר 2 · ב-Gmail</p><h2 class="st-line">Gemini מסכם לנו את כל מה שפספסנו.</h2></div></header>
+        <div class="app rise">
+          <div class="app-main">
+            <div class="app-title"><span>דואר נכנס</span><span class="badge">312 שלא נקראו</span></div>
+            <div class="nrow"><b>תזכורת אחרונה: דוח רבעוני!!!</b><span>מטה</span><span>10:05</span></div>
+            <div class="nrow"><b>הודעה: הפסקת חשמל ביום ג'</b><span>אחזקה</span><span>09:40</span></div>
+            <div class="nrow"><b>מצגת להנהלה – גרסה 4</b><span>הלשכה</span><span>09:27</span></div>
+            <div class="nrow"><b>הזמנה: ישיבת צוות שבועית</b><span>מזכירות</span><span>09:15</span></div>
+            <div class="nrow"><b>לאישורך: הזמנת ציוד</b><span>רכש</span><span>09:02</span></div>
+            <div class="nrow"><b>השב לכולם: מי לקח את המטען מחדר 204?</b><span>כולם</span><span>08:41</span></div>
+          </div>
+          <div class="gp can-glow">
+            <div class="gp-head"><svg><use href="#spark"/></svg>Gemini</div>
+            <p class="ask pop"><span class="tx" data-text="מה פספסתי השבוע, ומה מחכה לתשובה ממני?"></span></p>
+            <div class="ans pop">
+              <div class="ans-h"><svg><use href="#spark"/></svg>סיכום של 312 הודעות</div>
+              <ul>
+                <li class="rise a1 c-blue">ישיבת הצוות נדחתה ליום שלישי, 10:00.</li>
+                <li class="rise a2 c-amber">שתי בקשות מחכות לאישורך: חופשה והזמנת ציוד.</li>
+                <li class="rise a3 c-green">המטען מחדר 204 נמצא. לא נדרשת ממך פעולה.</li>
+              </ul>
+            </div>
+            <div class="gp-input">שאלו את Gemini</div>
+          </div>
+        </div>
+        <div class="capband rise"><p class="cap">תוך דקה יודעים מה חשוב, ומה מחכה לתשובה.</p></div>
+      </section>
+      <section class="scene" id="st2-sum" data-kind="sum" data-dur="5000">
+        <div class="sum-half sum-then paper"><span class="chip-then rise">איך עובדים היום</span><p class="sum-text rise">בוקר שלם של קריאה</p></div>
+        <div class="sum-half sum-now night"><span class="chip-now rise">עם Gemini</span><p class="sum-text rise">סיכום אחד, <em>בעברית</em></p></div>
+        <div class="sum-arrow pop"><svg><use href="#arrow"/></svg></div>
+      </section>
+
+      <!-- 11–14 · challenge 3: finding files (Drive + Gemini) -->
+      <section class="scene night" id="st3-intro" data-kind="intro" data-dur="4000">
+        <div class="in-wrap">
+          <p class="in-eyebrow rise">אתגר 3 מתוך 5</p>
+          <h2 class="in-title rise">חיפוש מסמכים וקבצים</h2>
+          <p class="in-sub rise"><b class="in-ex">דוגמה מחיי היום-יום:</b> מה הקובץ האחרון שמיכל שיתפה איתי?</p>
+          <div class="in-flow fade"><span class="chip-then on-night">איך עובדים היום</span><svg><use href="#arrow"/></svg><span class="chip-now">עם Gemini</span></div>
+        </div>
+      </section>
+      <section class="scene paper" id="st3-then" data-dur="11000">
+        <header class="st-head"><span class="chip-then">איך עובדים היום</span><div class="st-text"><p class="st-eye">אתגר 3 · חיפוש מסמכים וקבצים</p><h2 class="st-line">מחפשים קובץ בכונן המשותף, בתיקייה בתוך תיקייה.</h2></div></header>
+        <div class="win w-exp pop">
+          <div class="win-bar"><span>סייר הקבצים</span><span class="win-btns"><i>_</i><i>□</i><i>×</i></span></div>
+          <div class="exp-top">
+            <div class="addr"><span class="seg pop sg1">כונן S</span><span class="seg pop sg2">משותף</span><span class="seg pop sg3">האגף</span><span class="seg pop sg4">ישן_לא_למחוק</span><span class="seg pop sg5">2025</span><span class="seg pop sg6">תוכניות</span><span class="seg pop sg7">סופי</span><span class="seg pop sg8">סופי_באמת</span></div>
+            <div class="sbox"><svg class="hourglass"><use href="#spin"/></svg><span class="tx" data-text="תוכנית עבודה"></span></div>
+          </div>
+          <div class="exp-body">
+            <div class="fold pop" style="--d:0s"><i></i>חדש</div>
+            <div class="fold pop" style="--d:.12s"><i></i>חדש (2)</div>
+            <div class="fold pop" style="--d:.24s"><i></i>ישן</div>
+            <div class="fold pop" style="--d:.36s"><i></i>ישן_לא_למחוק</div>
+            <div class="fold pop" style="--d:.48s"><i></i>גיבוי</div>
+            <div class="fold pop" style="--d:.6s"><i></i>גיבוי של גיבוי</div>
+            <div class="fold pop" style="--d:.72s"><i></i>לא לגעת!!</div>
+            <div class="fold pop" style="--d:.84s"><i></i>תיקייה חדשה (3)</div>
+            <p class="nf fade">לא נמצאו פריטים התואמים לחיפוש.</p>
+          </div>
+        </div>
+        <div class="capband rise"><p class="cap">מחפשים חצי שעה, ולא מוצאים.</p></div>
+      </section>
+      <section class="scene night wipe" id="st3-now" data-dur="12000">
+        <header class="st-head"><span class="chip-now">עם Gemini</span><div class="st-text"><p class="st-eye">אתגר 3 · ב-Google Drive</p><h2 class="st-line">שואלים את Google Drive במילים רגילות, כמו ששואלים עמית לעבודה.</h2></div></header>
+        <div class="gs pop can-glow"><svg><use href="#spark"/></svg><span class="tx" data-text="מה הקובץ האחרון שמיכל שיתפה איתי, ומה כתוב בו?"></span></div>
+        <div class="res rise">
+          <div class="file"><i class="ficon"></i><div><p class="fname">תוכנית עבודה 2026</p><p class="fmeta">Drive · מיכל שיתפה איתך לפני שבועיים · 8 עמודים</p></div></div>
+          <p class="ai-sum rise"><svg><use href="#spark"/></svg><span>תוכנית העבודה של האגף לשנה הבאה: שלושה יעדים, לוח זמנים ותקציב.</span></p>
+          <span class="found pop">נמצא תוך 2 שניות</span>
+        </div>
+        <div class="capband rise"><p class="cap">ומקבלים את הקובץ, וגם סיכום קצר שלו.</p></div>
+      </section>
+      <section class="scene" id="st3-sum" data-kind="sum" data-dur="5000">
+        <div class="sum-half sum-then paper"><span class="chip-then rise">איך עובדים היום</span><p class="sum-text rise">חיפוש בתיקיות</p></div>
+        <div class="sum-half sum-now night"><span class="chip-now rise">עם Gemini</span><p class="sum-text rise">שאלה אחת, <em>במילים רגילות</em></p></div>
+        <div class="sum-arrow pop"><svg><use href="#arrow"/></svg></div>
+      </section>
+
+      <!-- 15–18 · challenge 4: reports and spreadsheets (Sheets + Gemini) -->
+      <section class="scene night" id="st4-intro" data-kind="intro" data-dur="4000">
+        <div class="in-wrap">
+          <p class="in-eyebrow rise">אתגר 4 מתוך 5</p>
+          <h2 class="in-title rise">דוחות ואקסלים</h2>
+          <p class="in-sub rise"><b class="in-ex">דוגמה מחיי היום-יום:</b> דוח חודשי לישיבת הנהלה</p>
+          <div class="in-flow fade"><span class="chip-then on-night">איך עובדים היום</span><svg><use href="#arrow"/></svg><span class="chip-now">עם Gemini</span></div>
+        </div>
+      </section>
+      <section class="scene paper" id="st4-then" data-dur="11000">
+        <header class="st-head"><span class="chip-then">איך עובדים היום</span><div class="st-text"><p class="st-eye">אתגר 4 · דוחות ואקסלים</p><h2 class="st-line">הדוח הוא קובץ אקסל, עם נוסחאות שרק אדם אחד מבין.</h2></div></header>
+        <div class="win w-xls pop">
+          <div class="win-bar"><span>דוח_חודשי_מעודכן_סופי (2).xls</span><span class="win-btns"><i>_</i><i>□</i><i>×</i></span></div>
+          <div class="fxbar"><i>fx</i><span class="f tx" data-text="=VLOOKUP(B2,'גיליון3 (2)'!A:F,6,FALSE)"></span></div>
+          <div class="xgrid">
+            <div class="h"></div><div class="h">A</div><div class="h">B</div><div class="h">C</div><div class="h">D</div><div class="h">E</div>
+            <div class="h">1</div><div class="merge">דוח חודשי (מעודכן!!) (2)</div>
+            <div class="h">2</div><div class="b">חודש</div><div class="b">פניות</div><div class="b">טופלו</div><div class="b">אחוז</div><div class="b">הערות</div>
+            <div class="h">3</div><div>יולי</div><div>128</div><div class="e">#REF!</div><div class="e">#DIV/0!</div><div class="pk">לבדוק עם דני</div>
+            <div class="h">4</div><div>אוגוסט</div><div>94</div><div>61</div><div class="gr">65%</div><div>!!!</div>
+            <div class="h">5</div><div>ספטמבר</div><div class="e">#N/A</div><div>40</div><div></div><div>ראו גיליון 3</div>
+            <div class="h">6</div><div class="b">סה"כ</div><div class="e">#VALUE!</div><div class="e">#REF!</div><div></div><div>לא מסתדר??</div>
+          </div>
+        </div>
+        <p class="sticky pop">לא לגעת!!!<br>רק דני יודע איך זה עובד</p>
+        <div class="capband rise"><p class="cap">וכל שינוי קטן שובר משהו אחר.</p></div>
+      </section>
+      <section class="scene night wipe" id="st4-now" data-dur="12000">
+        <header class="st-head"><span class="chip-now">עם Gemini</span><div class="st-text"><p class="st-eye">אתגר 4 · ב-Google Sheets</p><h2 class="st-line">Gemini מסכם את הנתונים ומוסיף גרף.</h2></div></header>
+        <div class="app rise">
+          <div class="app-main">
+            <div class="app-title"><span>דוח חודשי</span></div>
+            <div class="sheet-main">
+              <div class="tbl rise">
+                <div class="tr hd"><span>חודש</span><span>פניות</span><span>טופלו</span></div>
+                <div class="tr"><span>יולי</span><span class="num">128</span><span class="num">97</span></div>
+                <div class="tr"><span>אוגוסט</span><span class="num">94</span><span class="num">61</span></div>
+                <div class="tr"><span>ספטמבר</span><span class="num">61</span><span class="num">40</span></div>
+              </div>
+              <div class="chart">
+                <p class="chart-t">פניות לפי חודש</p>
+                <div class="bar"><span>יולי</span><div class="track"><i style="--v:128"></i><b class="fade">128</b></div></div>
+                <div class="bar"><span>אוגוסט</span><div class="track"><i style="--v:94;--d:.12s"></i><b class="fade">94</b></div></div>
+                <div class="bar"><span>ספטמבר</span><div class="track"><i style="--v:61;--d:.24s"></i><b class="fade">61</b></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="gp can-glow">
+            <div class="gp-head"><svg><use href="#spark"/></svg>Gemini</div>
+            <p class="ask pop"><span class="tx" data-text="לסכם את הפניות לפי חודש ולהוסיף גרף"></span></p>
+            <div class="ans ansx pop"><div class="ans-h"><svg><use href="#spark"/></svg>Gemini</div><p>סיכמתי לפי חודש והוספתי גרף. ביולי היו הכי הרבה פניות: 128.</p></div>
+            <div class="gp-input">שאלו את Gemini</div>
+          </div>
+        </div>
+        <div class="capband rise"><p class="cap">ומקבלים טבלה וגרף, מוכנים לישיבה.</p></div>
+      </section>
+      <section class="scene" id="st4-sum" data-kind="sum" data-dur="5000">
+        <div class="sum-half sum-then paper"><span class="chip-then rise">איך עובדים היום</span><p class="sum-text rise">נוסחאות שרק דני מבין</p></div>
+        <div class="sum-half sum-now night"><span class="chip-now rise">עם Gemini</span><p class="sum-text rise">בקשה אחת, <em>במשפט אחד</em></p></div>
+        <div class="sum-arrow pop"><svg><use href="#arrow"/></svg></div>
+      </section>
+
+      <!-- 19–22 · challenge 5: meeting minutes (Docs + Gemini; Meet's own note-taking has no Hebrew yet) -->
+      <section class="scene night" id="st5-intro" data-kind="intro" data-dur="4000">
+        <div class="in-wrap">
+          <p class="in-eyebrow rise">אתגר 5 מתוך 5</p>
+          <h2 class="in-title rise">סיכומי ישיבות ופרוטוקולים</h2>
+          <p class="in-sub rise"><b class="in-ex">דוגמה מחיי היום-יום:</b> ישיבת צוות של שעה, ומישהו צריך לרשום</p>
+          <div class="in-flow fade"><span class="chip-then on-night">איך עובדים היום</span><svg><use href="#arrow"/></svg><span class="chip-now">עם Gemini</span></div>
+        </div>
+      </section>
+      <section class="scene paper" id="st5-then" data-dur="11000">
+        <header class="st-head"><span class="chip-then">איך עובדים היום</span><div class="st-text"><p class="st-eye">אתגר 5 · סיכומי ישיבות ופרוטוקולים</p><h2 class="st-line">מישהו אחד יושב בישיבה ומקליד הכל, ולא באמת משתתף.</h2></div></header>
+        <div class="win w-word pop">
+          <div class="win-bar"><span>פרוטוקול_ישיבה_טיוטה.doc</span><span class="win-btns"><i>_</i><i>□</i><i>×</i></span></div>
+          <div class="tools"><i>B</i><i>I</i><i>U</i><span>Times New Roman</span><span>12</span></div>
+          <div class="field page">
+            <p class="pl-h"><span class="tx w1" data-text="ישיבת צוות – 14/9"></span></p>
+            <p><span class="tx w2" data-text="נוכחים: דנה, אבי, מיכל, יוסי ועוד מישהו"></span></p>
+            <p><span class="tx w3" data-text="תקציב – הוחלט ש... (לבדוק מה הוחלט)"></span></p>
+            <p><span class="tx w4" data-text="אבי ייקח את זה?? או מיכל??"></span></p>
+            <p><span class="tx w5" data-text="המשך בשבוע הבא. מתי???"></span></p>
+          </div>
+        </div>
+        <p class="sticky st-late pop">לשלוח פרוטוקול!!<br>(כבר עבר שבוע...)</p>
+        <div class="capband rise"><p class="cap">הפרוטוקול יוצא אחרי שבוע, וחלק מהמשימות נשכחות.</p></div>
+      </section>
+      <section class="scene night wipe" id="st5-now" data-dur="12000">
+        <header class="st-head"><span class="chip-now">עם Gemini</span><div class="st-text"><p class="st-eye">אתגר 5 · ב-Google Docs</p><h2 class="st-line">Gemini מסדר את הרשימות מהישיבה.</h2></div></header>
+        <div class="app rise">
+          <div class="app-main">
+            <div class="app-title"><span>רשימות מהישיבה</span></div>
+            <ul class="notes">
+              <li>תקציב רבעון הבא – אושר!</li>
+              <li>אבי – לו"ז מעודכן עד יום ה'</li>
+              <li>מיכל שולחת סיכום לכולם</li>
+              <li>נפגשים שוב שלישי הבא 10:00</li>
+            </ul>
+          </div>
+          <div class="gp can-glow">
+            <div class="gp-head"><svg><use href="#spark"/></svg>Gemini</div>
+            <p class="ask pop"><span class="tx" data-text="לסדר את הרשימות לפרוטוקול: החלטות, משימות ואחראים"></span></p>
+            <div class="ans pop">
+              <div class="ans-h"><svg><use href="#spark"/></svg>פרוטוקול ישיבת צוות</div>
+              <ul>
+                <li class="rise a1 c-blue">החלטה: התקציב לרבעון הבא אושר.</li>
+                <li class="rise a2 c-amber">אבי: לעדכן את לוח הזמנים, עד יום ה'.</li>
+                <li class="rise a3 c-coral">מיכל: לשלוח סיכום לכל הצוות.</li>
+                <li class="rise a4 c-green">הישיבה הבאה: יום שלישי, 10:00.</li>
+              </ul>
+            </div>
+            <div class="gp-input">שאלו את Gemini</div>
+          </div>
+        </div>
+        <div class="capband rise"><p class="cap">ומקבלים פרוטוקול מסודר: החלטות, משימות ואחראים.</p></div>
+      </section>
+      <section class="scene" id="st5-sum" data-kind="sum" data-dur="5000">
+        <div class="sum-half sum-then paper"><span class="chip-then rise">איך עובדים היום</span><p class="sum-text rise">פרוטוקול אחרי שבוע</p></div>
+        <div class="sum-half sum-now night"><span class="chip-now rise">עם Gemini</span><p class="sum-text rise">פרוטוקול מסודר, <em>תוך דקה</em></p></div>
+        <div class="sum-arrow pop"><svg><use href="#arrow"/></svg></div>
+      </section>
+
+      <!-- 23 · what else changed -->
+      <section class="scene night" id="sc-recap" data-dur="10000">
+        <h2 class="rc-head rise">ומה עוד השתנה?</h2>
+        <div class="rc-grid">
+          <div class="rc pop r1 c-amber"><svg><use href="#i-link"/></svg><p class="rc-t">שיתוף בקישור</p><p class="rc-s">במקום עוד קובץ מצורף</p></div>
+          <div class="rc pop r2 c-green"><svg><use href="#i-cloud"/></svg><p class="rc-t">הכל בענן</p><p class="rc-s">לא בכונן S</p></div>
+        </div>
+      </section>
+
+      <!-- 24 · the next step: an AI agent on the Windows desktop, connected to Drive, mail, folders and the office systems -->
+      <section class="scene night" id="sc-next" data-dur="18500">
+        <div class="dk-wp" aria-hidden="true"><svg viewBox="0 0 880 880"><defs><linearGradient id="bloom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="bl-a"/><stop offset="1" class="bl-b"/></linearGradient></defs><g fill="url(#bloom)" transform="translate(440 440)"><ellipse rx="250" ry="78" opacity=".5" transform="rotate(-160) translate(175 0)"/><ellipse rx="250" ry="78" opacity=".5" transform="rotate(-125) translate(175 0)"/><ellipse rx="250" ry="78" opacity=".5" transform="rotate(-90) translate(175 0)"/><ellipse rx="250" ry="78" opacity=".5" transform="rotate(-55) translate(175 0)"/><ellipse rx="250" ry="78" opacity=".5" transform="rotate(-20) translate(175 0)"/><ellipse rx="250" ry="78" opacity=".5" transform="rotate(15) translate(175 0)"/></g></svg></div>
+        <header class="st-head"><span class="chip-now">השלב הבא</span><div class="st-text"><h2 class="st-line rise">הגדרת סוכני AI על שולחן העבודה</h2></div></header>
+        <div class="dk-icons">
+          <div class="dk-ic ic1 c-blue"><i><svg><use href="#i-cloud"/></svg></i>Google Drive</div>
+          <div class="dk-ic ic2 c-coral"><i><svg><use href="#i-mail"/></svg></i>Gmail</div>
+          <div class="dk-ic ic3 c-amber"><i><svg><use href="#i-folder"/></svg></i>תיקיות משותפות</div>
+          <div class="dk-ic ic4 c-green"><i><svg><use href="#i-db"/></svg></i>מערכות המשרד</div>
+        </div>
+        <div class="ag pop">
+          <div class="ag-bar"><svg><use href="#spark"/></svg>הסוכן שלי<span class="ag-on fade">● מחובר ל-4 מקורות</span><span class="ag-ctl" aria-hidden="true"><i>—</i><i>☐</i><i>✕</i></span></div>
+          <div class="ag-chat">
+            <p class="ask pop">מה סוכם בישיבה עם האגף, ומה מחכה לי השבוע?</p>
+            <p class="ag-think fade"><i></i><i></i><i></i>מחפש ב-Drive, ב-Gmail, בתיקיות ובמערכות המשרד</p>
+            <div class="ans pop">
+              <div class="ans-h"><svg><use href="#spark"/></svg>תשובה אחת, מ-4 מקורות</div>
+              <ul>
+                <li class="rise a1 c-blue"><span>בישיבה סוכם שהתקציב לרבעון הבא אושר.</span><i class="src">Drive</i></li>
+                <li class="rise a2 c-coral"><span>שתי בקשות מחכות לאישורך.</span><i class="src">Gmail</i></li>
+                <li class="rise a3 c-amber"><span>הדוח החודשי מוכן, בתיקייה המשותפת.</span><i class="src">תיקיות</i></li>
+                <li class="rise a4 c-green"><span>שלוש פניות פתוחות בטיפולך.</span><i class="src">מערכות המשרד</i></li>
+              </ul>
+            </div>
+          </div>
+          <div class="ag-in"><span class="ph">שאלו את הסוכן…</span><span class="tx" data-text="מה סוכם בישיבה עם האגף, ומה מחכה לי השבוע?"></span><b class="ag-send"><svg><use href="#arrow"/></svg></b></div>
+        </div>
+        <div class="dk-bar" aria-hidden="true">
+          <b class="b"><span class="dk-start"><i></i><i></i><i></i><i></i></span></b>
+          <span class="dk-search"><svg><use href="#i-search"/></svg>חיפוש</span>
+          <b class="b"><svg><use href="#i-folder"/></svg></b>
+          <b class="b"><svg><use href="#i-globe"/></svg></b>
+          <b class="b"><svg><use href="#i-mail"/></svg></b>
+          <b class="b tb-ag"><svg><use href="#spark"/></svg></b>
+          <span class="dk-clock" dir="ltr"><b>10:00</b><span>21/10/2026</span></span>
+        </div>
+        <div class="capband rise"><p class="cap">במקום לחפש בכל מקום, שואלים שאלה אחת ומקבלים תשובה. עבודה רציפה ויעילה.</p></div>
+      </section>
+
+      <!-- 25 · mindset -->
+      <section class="scene night" id="sc-mind" data-dur="7000">
+        <p class="ai-l1 rise">בשביל זה לא צריך להיות <span class="strike">טכנולוגי</span>.</p>
+        <p class="ai-l2 rise">צריך להיות <em>סקרן</em>.</p>
+      </section>
+
+      <!-- 26 · finale -->
+      <section class="scene night" id="sc-final" data-dur="10000">
+        <h2 class="fin-head rise">הפרק הבא עוד לא נכתב.</h2>
+        <div class="fin-page rise"><p class="fin-type"><span class="tx" data-text="היום."></span><span class="cur c-amber"><i class="flag pop">אתם</i></span></p></div>
+        <p class="fin-sub rise">אתם תכתבו אותו.</p>
+        <div class="fin-card fade">
+          <img src="brand/culture_sport_logo.png" class="brand-logo fin-logo" alt="לוגו משרד התרבות והספורט">
+          <svg><use href="#spark"/></svg>
+          <p class="fin-event" data-cfg="eventTitle"></p>
+          <p class="fin-welcome">ברוכים הבאים</p>
+          <p class="credit" id="credit" hidden></p>
+        </div>
+      </section>
+
+      <!-- 27 · the live vote's first page, same QR, so people join while the video ends -->
+      <section class="scene night" id="sc-join" data-dur="6000" data-hold>
+        <header class="jn-head rise">
+          <img src="brand/culture_sport_logo.png" class="brand-logo jn-logo" alt="לוגו משרד התרבות והספורט">
+          <div><p class="jn-ev" data-cfg="eventTitle"></p><h2 class="jn-h">סרקו את הקוד והצטרפו</h2></div>
+        </header>
+        <div class="jn-main">
+          <p class="jn-big rise">טלפון ביד?<br>סרקו את הקוד</p>
+          <p class="jn-lead rise">ההצבעה תיפתח בעוד רגע. לא צריך להתחבר לשום דבר.</p>
+        </div>
+        <div class="jn-card pop"><div id="jn-qr" role="img" aria-label="קוד QR להצבעה"></div><b>סרקו להצבעה</b><p class="jn-alt"><span id="jn-alt-lab" hidden>אין QR? מקלידים בדפדפן:</span><span id="jn-url" dir="ltr"></span></p></div>
+      </section>
+
+      <div id="splash" class="night">
+        <img src="brand/culture_sport_logo.png" class="brand-logo sp-logo" alt="לוגו משרד התרבות והספורט">
+        <svg class="sp-spark" aria-hidden="true"><use href="#spark"/></svg>
+        <p class="sp-ministry" data-cfg="ministry"></p>
+        <p class="sp-hello">ברוכים הבאים</p>
+        <h1 class="sp-event">להאקתון 2026</h1>
+        <button id="go" class="sp-play" type="button" aria-label="הפעלת הסרטון"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+        <p class="sp-hint">הפעלת הסרטון · <span id="sp-len"></span> דקות</p>
+      </div>
+    </div>
+  </div>
+
+  <nav id="bar" aria-label="פקדי הסרטון">
+    <button id="b-prev" type="button" aria-label="הקודם"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button id="b-play" type="button" aria-label="הפעלה"></button>
+    <button id="b-next" type="button" aria-label="הבא"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div id="prog" role="slider" tabindex="0" aria-label="התקדמות" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="fill"></div></div>
+    <span id="clock">0:00</span>
+    <button id="b-full" type="button" aria-label="מסך מלא"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+  </nav>
+</div>
+
+<script id="narr-data" type="application/json">{"sc-cold":{"src":"audio/sc-cold.mp3","dur":6720,"marks":[0,1907]},"sc-title":{"src":"audio/sc-title.mp3","dur":4160,"marks":[0,1480]},"st1-intro":{"src":"audio/st1-intro.mp3","dur":8640,"marks":[0,4480]},"st1-then":{"src":"audio/st1-then.mp3","dur":9600,"marks":[0,4360]},"st1-now":{"src":"audio/st1-now.mp3","dur":7280,"marks":[0,3520]},"st1-sum":{"src":"audio/st1-sum.mp3","dur":4080,"marks":[0,2400]},"sc-recap":{"src":"audio/sc-recap.mp3","dur":7760,"marks":[0,1160,5040]},"sc-mind":{"src":"audio/sc-mind.mp3","dur":4560,"marks":[0,3120]},"sc-final":{"src":"audio/sc-final.mp3","dur":6800,"marks":[0,2100,3520,4640]},"st2-intro":{"src":"audio/st2-intro.mp3","dur":8800,"marks":[0,3200]},"st2-then":{"src":"audio/st2-then.mp3","dur":7840,"marks":[0,3840]},"st2-now":{"src":"audio/st2-now.mp3","dur":5760,"marks":[0,2800]},"st2-sum":{"src":"audio/st2-sum.mp3","dur":4080,"marks":[0,2400]},"st3-intro":{"src":"audio/st3-intro.mp3","dur":7760,"marks":[0,3679]},"st3-then":{"src":"audio/st3-then.mp3","dur":6640,"marks":[0,4080]},"st3-now":{"src":"audio/st3-now.mp3","dur":8480,"marks":[0,5680]},"st3-sum":{"src":"audio/st3-sum.mp3","dur":4240,"marks":[0,2147]},"st4-intro":{"src":"audio/st4-intro.mp3","dur":6560,"marks":[0,2720]},"st4-then":{"src":"audio/st4-then.mp3","dur":6560,"marks":[0,4160]},"st4-now":{"src":"audio/st4-now.mp3","dur":6160,"marks":[0,3360]},"st4-sum":{"src":"audio/st4-sum.mp3","dur":4400,"marks":[0,2480]},"st5-intro":{"src":"audio/st5-intro.mp3","dur":9040,"marks":[0,4240]},"st5-then":{"src":"audio/st5-then.mp3","dur":8480,"marks":[0,4520]},"st5-now":{"src":"audio/st5-now.mp3","dur":7360,"marks":[0,2720]},"st5-sum":{"src":"audio/st5-sum.mp3","dur":5680,"marks":[0,2240]},"sc-join":{"src":"audio/sc-join.mp3","dur":6480,"marks":[0,1920]},"sc-many":{"src":"audio/sc-many.mp3","dur":7120,"marks":[0,2760]},"sc-next":{"src":"audio/sc-next.mp3","dur":16400,"marks":[0,1120,4000,5560,6320,7440,8960,14480]},"_music":"audio/music.mp3","_credit":"קריינות ומוזיקה: ElevenLabs"}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  /* ===== הגדרות ===== */
+  const CONFIG = {
+    eventTitle: 'האקתון משרד המדע, התרבות והספורט',
+    ministry: 'משרד המדע, התרבות והספורט',   // the line over "ברוכים הבאים" on the welcome page; empty = not shown
+    voteUrl: 'https://script.google.com/macros/s/AKfycbyuXMsGrbSVy93ffq2GjJTjAmN30g42O8g4JPvPuOZvYfEld9yQdgJw2_W3T8Fm2AEF/exec',   // the live vote, same as its screen's QR
+    voteShort: 'tinyurl.com/hakaton26'   // a short address to type, shown under the QR; empty = show the full address
+  };
+  const NARR_AT = 300;           // the narrator starts this long after a scene opens (ms)
+  const NARR_TAIL = 900;         // breathing room after the narrator finishes, before the next scene
+  const MUSIC_LEVEL = { idle: 0.30, under: 0.11 };   // background music, alone and under the narrator
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const stage = $('#stage'), viewer = $('#viewer'), frameEl = $('#frame'), splash = $('#splash');
+  const playBtn = $('#b-play'), fill = $('#fill'), clock = $('#clock'), prog = $('#prog');
+
+  let NARR = {};
+  try { NARR = JSON.parse($('#narr-data').textContent || '{}'); } catch (e) { NARR = {}; }
+  const hasNarr = id => !!(NARR[id] && NARR[id].src);
+
+  $$('[data-cfg]').forEach(n => { n.textContent = CONFIG[n.dataset.cfg] || ''; });
+  if (NARR._credit) { $('#credit').textContent = NARR._credit; $('#credit').hidden = false; }
+
+  /* the QR code for the live vote; the address stays on screen even if the library can't load */
+  const dark = getComputedStyle(document.documentElement).getPropertyValue('--night').trim() || '#0c1121';
+  function qr(target, text, hideOnFail) {
+    try {
+      if (!window.QRCode) throw new Error('no QR library');
+      new window.QRCode($(target), { text, width: 456, height: 456, colorDark: dark, colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
+    } catch (e) { $(hideOnFail).hidden = true; }
+  }
+  qr('#jn-qr', CONFIG.voteUrl, '#jn-qr');
+  $('#jn-url').textContent = CONFIG.voteShort || CONFIG.voteUrl;
+  if (CONFIG.voteShort) { $('.jn-card').classList.add('short'); $('#jn-alt-lab').hidden = false; }
+
+  /* a scene lasts at least its animation time, and always long enough for its narration */
+  const S = $$('.scene', stage).map(el => {
+    const id = el.id, base = Number(el.dataset.dur);
+    const dur = hasNarr(id) ? Math.max(base, NARR_AT + NARR[id].dur + NARR_TAIL) : base;
+    return { el, id, kind: el.dataset.kind || '', dur, hold: el.hasAttribute('data-hold') };
+  });
+  const starts = [];
+  let total = 0;
+  for (const s of S) { starts.push(total); total += s.dur; }
+  const fmt = ms => { const sec = Math.round(ms / 1000); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+  $('#sp-len').textContent = fmt(total);
+
+  /* ===== timeline ===== */
+  let idx = 0, t = 0, playing = false, ended = false, started = false;
+  let fired = new Set(), typers = [], counters = [], cues = [];
+
+  const add = sel => el => $$(sel, el).forEach(n => n.classList.add('in'));
+  const cls = (sel, c) => el => $$(sel, el).forEach(n => n.classList.add(c));
+  const type = (sel, ms) => (el, t0) => $$(sel, el).forEach(n => typers.push({ n, chars: Array.from(n.dataset.text || ''), t0, ms, k: -1 }));
+  const count = (sel, dur) => (el, t0) => $$(sel, el).forEach(n => counters.push({ n, to: Number(n.dataset.to || 0), t0, dur, k: -1 }));
+
+  /* cue times are milliseconds, or 'm1+800' = 800ms after the narrator starts sentence 1 */
+  function when(id, tm) {
+    if (typeof tm === 'number') return tm;
+    const m = /^m(\d+)([+-]\d+)?$/.exec(tm);
+    const k = Number(m[1]), delta = Number(m[2] || 0);
+    const mark = hasNarr(id) && NARR[id].marks ? NARR[id].marks[k] : null;
+    return Math.max(0, (typeof mark === 'number' ? NARR_AT + mark : 600 + k * 3000) + delta);
+  }
+
+  const KIND = {
+    intro: [[100, add('.in-eyebrow')], [300, add('.in-title')], ['m1', add('.in-sub')], ['m1+700', add('.in-flow')]],
+    sum: [[200, add('.sum-then .rise')], ['m1-500', add('.sum-arrow')], ['m1', add('.sum-now .rise')]]
+  };
+  const CUES = {
+    'sc-cold': [[600, add('.pa')], [600, count('.tb-count .n', 7000)], ['m1', add('.pb')]],
+    'sc-title': [['m0', add('.t-a')], ['m1', add('.t-b')]],
+    'sc-many': [['m0', add('.mn-head')], ['m0+500', add('.mn-cloud span')], ['m1-300', cls('.mn-cloud', 'dim')], ['m1', add('.mn-sub')], ['m1+800', add('.mn-list li')]],
+    'st1-then': [[200, add('.w-mail')], [900, add('.ml1')], [1700, add('.ml2')], [2500, add('.ml3')], [3300, add('.ml4')], [4100, add('.ml5')], ['m1', add('.capband')], ['m1+2600', add('.st-q')]],
+    'st1-now': [[300, add('.gem')], [500, add('.doc')], [700, type('.gem-ask .tx', 35)], [2300, add('.gem-chip')], [2300, type('.d1', 22)], [2950, type('.d2', 22)], [3450, type('.d3', 22)], [3880, type('.d4', 22)], ['m1', add('.doc-people')], ['m1', add('.capband')], ['m1+300', cls('.avs', 'glow')], ['m1+1500', add('.cmt')]],
+    'sc-recap': [[200, add('.rc-head')], ['m1', add('.r1')], ['m2', add('.r2')]],
+    'st2-then': [[200, add('.w-inbox')], [500, count('.unread .n', 4300)], [500, add('.inbox-scroll')], ['m1', add('.capband')], ['m1+800', add('.reading')]],
+    'st2-now': [[400, add('.app')], [900, cls('.gp', 'glow')], [1000, add('.ask')], [1200, type('.ask .tx', 40)], [3000, add('.ans')], [3300, add('.a1')], [3900, add('.a2')], [4500, add('.a3')], ['m1', add('.capband')]],
+    'st3-then': [[200, add('.w-exp')], [600, add('.sg1')], [900, add('.sg2')], [1200, add('.sg3')], [1500, add('.sg4')], [1800, add('.sg5')], [2100, add('.sg6')], [2400, add('.sg7')], [2700, add('.sg8')], [800, add('.fold')], [3500, type('.sbox .tx', 70)], [4600, add('.hourglass')], ['m1', add('.capband')], ['m1+700', add('.nf')]],
+    'st3-now': [[400, add('.gs')], [800, cls('.gs', 'glow')], [900, type('.gs .tx', 32)], [3000, add('.res')], [3600, add('.ai-sum')], ['m1', add('.capband')], ['m1+1200', add('.found')]],
+    'st4-then': [[200, add('.w-xls')], [900, type('.fxbar .f', 42)], [3400, add('.sticky')], ['m1', add('.capband')], ['m1+500', add('.e')]],
+    'st4-now': [[400, add('.app')], [900, cls('.gp', 'glow')], [1000, add('.ask')], [1200, type('.ask .tx', 40)], [2900, add('.tbl')], [3300, add('.ansx')], [3600, add('.track i')], [4300, add('.track b')], ['m1', add('.capband')]],
+    'st5-then': [[200, add('.w-word')], [800, type('.w1', 60)], [1900, type('.w2', 45)], [3800, type('.w3', 45)], [5600, type('.w4', 50)], [7100, type('.w5', 50)], ['m1', add('.capband')], ['m1+1200', add('.st-late')]],
+    'st5-now': [[400, add('.app')], [900, cls('.gp', 'glow')], [1000, add('.ask')], [1200, type('.ask .tx', 40)], [3400, add('.ans')], [3700, add('.a1')], [4200, add('.a2')], [4700, add('.a3')], [5200, add('.a4')], ['m1', add('.capband')]],
+    // the next step: each desktop icon connects as the narrator names it; the agent opens from the taskbar,
+    // the question is typed and sent, it searches, and the answer comes back with its sources lit
+    'sc-next': [['m1', add('.st-line')], ['m1', add('.tb-ag')], ['m1+300', add('.ag')],
+      ['m2+600', add('.ic1')], ['m3', add('.ic2')], ['m4', add('.ic3')], ['m5+200', add('.ic4')], ['m5+1000', add('.ag-on')],
+      ['m6', add('.capband')], ['m6+200', cls('.ag', 'typing')], ['m6+200', type('.ag-in .tx', 34)],
+      ['m6+1900', cls('.ag', 'sent')], ['m6+1900', add('.ask')], ['m6+2200', add('.ag-think')], ['m6+3100', cls('.ag', 'done')], ['m6+3100', add('.ans')],
+      ['m6+3400', add('.a1')], ['m6+3400', cls('.ic1', 'glow')], ['m6+3800', add('.a2')], ['m6+3800', cls('.ic2', 'glow')],
+      ['m6+4200', add('.a3')], ['m6+4200', cls('.ic3', 'glow')], ['m6+4600', add('.a4')], ['m6+4600', cls('.ic4', 'glow')]],
+    'sc-mind': [[300, add('.ai-l1')], ['m1-700', add('.strike')], ['m1', add('.ai-l2')]],
+    'sc-final': [[0, add('.fin-page')], ['m0', add('.fin-head')], ['m1', add('.flag')], ['m1', add('.fin-sub')], ['m2', type('.fin-type .tx', 160)], ['m3', add('.fin-card')]],
+    'sc-join': [[200, add('.jn-head')], [500, add('.jn-card')], ['m1-200', add('.jn-big')], ['m1+700', add('.jn-lead')]]
+  };
+  const STATE = ['in', 'glow', 'dim', 'typing', 'sent', 'done'];
+
+  function reset(el) {
+    STATE.forEach(c => $$('.' + c, el).forEach(n => n.classList.remove(c)));
+    $$('[data-text]', el).forEach(n => { n.textContent = ''; });
+    $$('[data-to]', el).forEach(n => { n.textContent = '0'; });
+  }
+
+  function go(i) {
+    i = Math.max(0, Math.min(S.length - 1, i));
+    const prevIdx = idx, prevEl = S[prevIdx].el, nextEl = S[i].el;
+    idx = i; t = 0; ended = false; fired = new Set(); typers = []; counters = [];
+    const s = S[i];
+    cues = (CUES[s.id] || KIND[s.kind] || []).map(c => [when(s.id, c[0]), c[1]]);
+    if (hasNarr(s.id)) cues.push([NARR_AT, () => Voice.start(s.id, Math.max(0, t - NARR_AT))]);
+    Voice.stop();
+    if (prevEl !== nextEl) {
+      // a "now" scene wipes in over the "then" scene, so keep the old one visible until the wipe ends
+      const wipeIn = nextEl.classList.contains('wipe') && i === prevIdx + 1;
+      const off = () => {
+        if (S[idx].el === prevEl) return;
+        prevEl.classList.remove('active');
+        setTimeout(() => { if (!prevEl.classList.contains('active')) reset(prevEl); }, 520);
+      };
+      if (wipeIn) setTimeout(off, 950); else off();
+    } else nextEl.classList.remove('active');
+    reset(nextEl);
+    void nextEl.offsetWidth;
+    nextEl.classList.add('active');
+    tick();
+  }
+
+  function tick() {
+    const s = S[idx];
+    cues.forEach((c, k) => {
+      if (fired.has(k) || t < c[0]) return;
+      if (c[1].length === 0 && !playing) return;   // the narrator only starts while playing
+      fired.add(k); c[1](s.el, c[0]);
+    });
+    for (const ty of typers) {
+      const k = Math.max(0, Math.min(ty.chars.length, Math.floor((t - ty.t0) / ty.ms)));
+      if (k !== ty.k) { ty.k = k; ty.n.textContent = ty.chars.slice(0, k).join(''); }
+    }
+    for (const c of counters) {
+      const p = Math.max(0, Math.min(1, (t - c.t0) / c.dur));
+      const v = Math.round(c.to * (1 - Math.pow(1 - p, 3)));
+      if (v !== c.k) { c.k = v; c.n.textContent = v.toLocaleString('he-IL'); }
+    }
+    if (t >= s.dur) {
+      t = s.dur;
+      if (s.hold || idx === S.length - 1) { if (!ended) { ended = true; finish(); } }
+      else { go(idx + 1); return; }
+    }
+    paint();
+  }
+
+  let lastClock = '';
+  function paint() {
+    const done = Math.min(total, starts[idx] + Math.min(t, S[idx].dur));
+    fill.style.width = (done / total * 100).toFixed(2) + '%';
+    const txt = fmt(done) + ' / ' + fmt(total);
+    if (txt !== lastClock) { lastClock = txt; clock.textContent = txt; prog.setAttribute('aria-valuenow', String(Math.round(done / total * 100))); }
+  }
+
+  let last = 0;
+  function loop(ts) {
+    const dt = last ? Math.min(100, ts - last) : 0;
+    last = ts;
+    if (playing) { t += dt; tick(); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  /* ===== sound: the narrator, and a quiet music bed that ducks under the voice ===== */
+  const Voice = (() => {
+    const a = new Audio();
+    a.preload = 'auto';
+    let live = false;
+    a.addEventListener('playing', () => Bed.duck(true));
+    a.addEventListener('pause', () => Bed.duck(false));
+    a.addEventListener('ended', () => { live = false; Bed.duck(false); });
+    return {
+      start(id, offsetMs) {
+        if (!hasNarr(id)) return;
+        a.src = NARR[id].src; live = true;
+        const go2 = () => { try { a.currentTime = offsetMs / 1000; } catch (e) { /* not seekable yet */ } a.play().catch(() => {}); };
+        if (a.readyState >= 1) go2(); else a.addEventListener('loadedmetadata', go2, { once: true });
+      },
+      stop() { live = false; a.pause(); },
+      pause() { a.pause(); },
+      resume() { if (live && !a.ended) a.play().catch(() => {}); }
+    };
+  })();
+
+  /* music bed: only a real file (generated with ElevenLabs); silent otherwise */
+  const Bed = (() => {
+    let on = true, ducked = false, low = false, file = null, fadeT = 0;
+    const level = () => !on ? 0 : (ducked || low ? MUSIC_LEVEL.under : MUSIC_LEVEL.idle);
+    function apply(ms) {
+      if (!file) return;
+      clearInterval(fadeT);
+      const from = file.volume, to = level(), steps = Math.max(1, Math.round((ms || 500) / 50));
+      let i = 0;
+      fadeT = setInterval(() => { i++; file.volume = Math.min(1, Math.max(0, from + (to - from) * i / steps)); if (i >= steps) clearInterval(fadeT); }, 50);
+    }
+    return {
+      useFile(src) { if (file) file.pause(); file = new Audio(src); file.loop = true; file.volume = 0; },
+      start() { if (!file) return; file.play().catch(() => {}); apply(1500); },
+      pause() { if (file) file.pause(); },
+      rewind() { low = false; if (file) file.currentTime = 0; },
+      duck(d) { ducked = d; apply(500); },
+      toggle() { on = !on; apply(400); return on; },
+      fadeLow() { low = true; apply(3000); }
+    };
+  })();
+  if (NARR._music) Bed.useFile(NARR._music);
+
+  /* ===== playback ===== */
+  const ICON = {
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>'
+  };
+  function syncBtn() { playBtn.innerHTML = playing ? ICON.pause : ICON.play; playBtn.setAttribute('aria-label', playing ? 'עצירה' : 'הפעלה'); }
+  function openStage() { splash.hidden = true; started = true; frameEl.classList.remove('pre'); }
+  function play() {
+    if (ended) { restart(); return; }
+    playing = true; stage.classList.remove('paused');
+    Bed.start(); Voice.resume(); keepAwake(); syncBtn(); poke();
+  }
+  function pause() { playing = false; stage.classList.add('paused'); Bed.pause(); Voice.pause(); syncBtn(); poke(); }
+  function toggle() { if (playing) pause(); else play(); }
+  function begin() { openStage(); Bed.rewind(); go(0); play(); }
+  function start() { enterFull(); begin(); }
+  function restart() { ended = false; Bed.rewind(); go(0); play(); }
+  function finish() {
+    playing = false; syncBtn();
+    frameEl.classList.remove('idle'); clearTimeout(idleTimer);
+    Bed.fadeLow();
+  }
+  function next() {
+    if (!started) { start(); return; }
+    if (idx < S.length - 1) { go(idx + 1); if (!playing) play(); }
+  }
+  function prev() {
+    if (!started) return;
+    go(idx - 1);
+    if (!playing) play();
+  }
+
+  /* keep the projector laptop awake while presenting */
+  let lock = null;
+  async function keepAwake() {
+    try {
+      if (!lock && navigator.wakeLock) {
+        lock = await navigator.wakeLock.request('screen');
+        lock.addEventListener('release', () => { lock = null; });
+      }
+    } catch (e) { lock = null; }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && playing) keepAwake(); });
+
+  /* controls fade out while playing */
+  let idleTimer = 0;
+  function poke() {
+    frameEl.classList.remove('idle');
+    clearTimeout(idleTimer);
+    if (playing) idleTimer = setTimeout(() => frameEl.classList.add('idle'), 2500);
+  }
+  frameEl.addEventListener('pointermove', poke);
+
+  function enterFull() {
+    try { if (!document.fullscreenElement && frameEl.requestFullscreen) frameEl.requestFullscreen().catch(() => {}); } catch (e) { /* not available here */ }
+  }
+  function toggleFull() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else enterFull();
+    } catch (e) { /* not available here */ }
+  }
+
+  function fit() {
+    const w = frameEl.clientWidth, h = frameEl.clientHeight;
+    const s = Math.max(0.05, Math.min(w / 1920, h / 1080));
+    viewer.style.width = Math.floor(1920 * s) + 'px';
+    viewer.style.height = Math.floor(1080 * s) + 'px';
+    stage.style.transform = 'scale(' + s + ')';
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(frameEl); else addEventListener('resize', fit);
+  document.addEventListener('fullscreenchange', fit);
+  fit();
+
+  const clicked = fn => e => { e.stopPropagation(); fn(); e.currentTarget.blur(); };
+  $('#go').addEventListener('click', clicked(start));
+  playBtn.addEventListener('click', clicked(() => { if (!started) start(); else toggle(); }));
+  $('#b-next').addEventListener('click', clicked(next));
+  $('#b-prev').addEventListener('click', clicked(prev));
+  $('#b-full').addEventListener('click', clicked(toggleFull));
+  // a click anywhere starts the video from the welcome page, then pauses and resumes it;
+  // once it ends, a click does nothing, so the vote's QR page stays up
+  viewer.addEventListener('click', e => {
+    if (e.target.closest('button, a')) return;
+    if (!started) start();
+    else if (!ended) toggle();
+  });
+  prog.addEventListener('click', e => {
+    const r = prog.getBoundingClientRect();
+    const target = Math.max(0, Math.min(1, (r.right - e.clientX) / r.width)) * total;
+    let i = S.findIndex((s, j) => target < starts[j] + s.dur);
+    if (i < 0) i = S.length - 1;
+    if (!started) openStage();
+    go(i);
+    if (!playing) play();
+  });
+
+  addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const tag = e.target && e.target.tagName;
+    if ((e.key === ' ' || e.key === 'Enter') && (tag === 'BUTTON' || tag === 'INPUT' || tag === 'LABEL')) return;
+    const k = e.key, c = e.code;
+    if (k === ' ') { e.preventDefault(); if (!started) start(); else if (!ended) toggle(); }
+    else if (k === 'Enter' || k === 'PageDown' || k === 'ArrowRight' || k === 'ArrowDown') { e.preventDefault(); next(); }
+    else if (k === 'PageUp' || k === 'ArrowLeft' || k === 'ArrowUp') { e.preventDefault(); prev(); }
+    else if (c === 'KeyK') { if (started && !ended) toggle(); }
+    else if (c === 'KeyM') Bed.toggle();
+    else if (c === 'KeyF') toggleFull();
+    else if (c === 'KeyH') frameEl.classList.toggle('nobar');
+    else if (c === 'KeyR' || k === 'Home') { if (started) restart(); else start(); }
+    else return;
+    poke();
+  });
+
+  /* #s4t12 opens scene 4 frozen at second 12, without the control bar (for rehearsals and checks) */
+  const m = /^#s(\d+)(?:t(\d+))?$/.exec(location.hash);
+  if (m) {
+    openStage();
+    frameEl.classList.add('nobar');
+    go(Number(m[1]));
+    t = m[2] ? Number(m[2]) * 1000 : 0;
+    tick();
+  }
+  syncBtn();
+  paint();
+})();
+</script>
